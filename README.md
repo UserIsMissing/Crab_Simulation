@@ -24,35 +24,59 @@ We utilize **Granular Resistive Force Theory (RFT)** to override standard contac
 
 ---
 
-## Installation & Setup
-1.  **Activate the Environment**:
-    
-bash
+## Environment Setup
+
+If you move the project directory or encounter a "bad interpreter" error, you must rebuild the local environment to refresh the absolute paths:
+
+1.  **Initialize the Environment**:
+    ```bash
+    rm -rf mujoco_env
     python3 -m venv mujoco_env
+    ```
+
+2.  **Activate the Environment**:
+    ```bash
     source mujoco_env/bin/activate
+    ```
 
+3.  **Install Dependencies**:
+    ```bash
+    pip install mujoco numpy matplotlib
+    ```
 
-2.  **Execute the Simulation**:
-Run the main simulation loop using the MuJoCo-optimized Python interpreter:
+---
 
-bash
-    ./mujoco_env/bin/mjpython simulate_crab.py
+## Running the Simulation
 
+### 1. Configure the Robot (`crab.xml`)
+The robot's physical properties are defined in `crab.xml`. The `base_shell` mass is set to match the hardware calculations to ensure correct gravitational loading:
+```xml
+<body name="base_shell" pos="0 0 0.13">
+    <!-- Updated mass based on NEMA 17 and MG996R motor weights -->
+    <geom name="shell_visual" type="mesh" mesh="shell_mesh" mass="2.09"/>
+</body>
+```
+
+### 2. Execute the Simulation
+Run the main simulation loop using the MuJoCo-optimized Python interpreter for macOS rendering:
+```bash
+./mujoco_env/bin/mjpython simulate_crab.py
+```
 
 **Key Simulation Controls:**
-*   **Gait Period**: Defined by `cycle_duration` (default: 4.0s) in `simulate_crab.py`.
-*   **Force Application**: The `apply_rft_forces()` function monitors the dactyl tip sites (`tip_rm`, `tip_l`, etc.) and applies resistive forces only when the global vertical position $z < 0$.
+*   **Gait Period**: Defined by `cycle_duration` in `simulate_crab.py`.
+*   **Force Application**: The `apply_rft_forces()` function monitors the dactyl tip sites and applies resistive forces once the global vertical position $z < 0$.
 
 ---
 
 ## Project Structure
-*   `crab.xml`: MuJoCo MJCF file defining robot morphology, mass, and actuators.
-*   `simulate_crab.py`: Python script for the simulation loop and RFT physics.
-*   `meshes/`: STL/OBJ files for the 3D-printed leg segments and wood chassis.
-*   `data/`: Directory for saved force and displacement graphs for preliminary results.
+*   **`crab.xml`**: MuJoCo MJCF file defining robot morphology, mass, and actuators.
+*   **`simulate_crab.py`**: Python script for the simulation loop and RFT physics integration.
+*   **`meshes/`**: STL/OBJ files for the 3D-printed leg segments and wood chassis.
+*   **`data/`**: Directory for saved force and displacement graphs for preliminary results.
 
 ---
 
 ## Academic Context
-This work is part of an inquiry into how biological movements like crab gaits can be applied to granular terrain navigation and sifting. The model accounts for effective weight ($W$), vertical resistive force ($F_z$), and horizontal drag/thrust ($F_h$).
+This work is part of an inquiry into how biological movements like crab gaits can be applied to granular terrain navigation and sifting. The model accounts for effective weight ($W$), vertical resistive force ($F_z$), and horizontal drag ($F_h$).
 ```
