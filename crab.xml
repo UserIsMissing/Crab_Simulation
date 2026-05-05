@@ -1,0 +1,154 @@
+<!-- runnning the enviorment: source mujoco_env/bin/activate -->
+<!-- running the simulation: ./mujoco_env/bin/mjpython simulate_crab.py -->
+
+<mujoco model="crab_leg_full_assembly">
+    <compiler angle="degree" coordinate="local" meshdir="meshes/"/>
+    <option gravity="0 0 -9.81" integrator="RK4" timestep="0.002"/>
+
+    <asset>
+        <material name="crab_r" rgba="0.8 0.2 0.2 1"/>
+        <material name="crab_l" rgba="0.2 0.8 0.8 1"/>
+        <material name="motor_grey" rgba="0.2 0.2 0.2 1"/>
+        <material name="shell_white" rgba="0.9 0.9 0.9 1"/>
+
+        <mesh name="shell_mesh" file="Shell.stl" scale="0.0254 0.0254 0.0254"/>
+        <mesh name="nema17_mesh" file="Nema17.stl" scale="0.0254 0.0254 0.0254"/>
+        <mesh name="femur_mesh" file="Femur.stl" scale="0.0254 0.0254 0.0254"/>
+        <mesh name="merus_mesh" file="Merus.stl" scale="0.0254 0.0254 0.0254"/>
+        <mesh name="dactyl_mesh" file="Dactyl.stl" scale="0.0254 0.0254 0.0254"/>
+    </asset>
+
+    <worldbody>
+        <light diffuse=".5 .5 .5" pos="0 0 3" dir="0 0 -1"/>
+        <geom name="ground" type="plane" size="2 2 0.1" rgba=".9 .9 .9 0.5" contype="1" conaffinity="1"/>
+        <!-- <geom name="hard_floor" type="plane" pos="0 0 -0.005" size="2 2 0.01" rgba="0 0 0 0"/> -->
+
+        <body name="base_shell" pos="0 0 0.13">
+            <freejoint/>
+            <!-- Combined mass of motors, wood base, and electronics -->
+            <geom name="shell_visual" type="mesh" mesh="shell_mesh" material="shell_white" mass="2.1" />
+
+            <!-- RIGHT MIDDLE LEG -->
+            <body name="motor_rm" pos="0 -0.025 0.04" euler="0 90 0"> 
+                <geom name="motor_rm_vis" type="mesh" mesh="nema17_mesh" material="motor_grey"/>
+                <body name="femur_rm" pos="0.035 0.041 0.07"> 
+                    <joint name="hip_rm" type="hinge" axis="1 0 0" pos="0 -0.015 -0.03" range="-90 90"/>
+                    <geom name="femur_rm_vis" type="mesh" mesh="femur_mesh" euler="0 180 0" material="crab_r"/>
+                    <body name="merus_rm" pos="0.04 -0.025 0.03">
+                        <joint name="knee_rm" type="hinge" axis="0 1 0" pos="-0.02 0 -0.02" range="-90 90"/>
+                        <geom name="merus_rm_vis" type="mesh" mesh="merus_mesh" euler="0 60 90" material="crab_r"/>
+                        <body name="dactyl_rm" pos="0.04 0.025 0.0075">
+                            <joint name="ankle_rm" type="hinge" axis="0 1 0" pos="-0.01 -0.02 -0.005" range="-60 60"/>
+                            <geom name="dactyl_rm_vis" type="mesh" mesh="dactyl_mesh" euler="0 -90 0" material="crab_r" contype="1" conaffinity="1"/>
+                            <site name="tip_rm" pos="0.048 -0.0125 -0.01" size="0.01" rgba="0 1 0 1"/>
+                        </body>
+                    </body>
+                </body>
+            </body>
+            <!-- RIGHT BACK LEG -->
+            <!-- x,y,z -->
+            <body name="motor_rb" pos="-0.01 -0.08 0.04" euler="0 90 0"> 
+                <geom name="motor_rb_vis" type="mesh" mesh="nema17_mesh" euler="15 0 0" material="motor_grey"/>
+                <!-- z,x,y -->
+                <body name="femur_rb" pos="0.035 0.02 0.08"> 
+                    <joint name="hip_rb" type="hinge" axis="1 0 0" pos="0 -0.015 -0.03" range="-90 90"/>
+                    <geom name="femur_rb_vis" type="mesh" mesh="femur_mesh" euler="15 180 0" material="crab_r"/>
+                    <!-- z,y,x -->
+                    <body name="merus_rb" pos="0.04 -0.032 0.02">
+                        <joint name="knee_rb" type="hinge" axis="0 1 0" pos="-0.02 0 -0.02" range="-90 90"/>
+                        <geom name="merus_rb_vis" type="mesh" mesh="merus_mesh" euler="15 60 90" material="crab_r"/>
+                        <!-- z,y,x -->
+                        <body name="dactyl_rb" pos="0.04 0.022 0.015">
+                            <joint name="ankle_rb" type="hinge" axis="0 1 0" pos="-0.01 -0.02 -0.005" range="-60 60"/>
+                            <geom name="dactyl_rb_vis" type="mesh" mesh="dactyl_mesh" euler="15 -90 0" material="crab_r" contype="1" conaffinity="1"/>
+                            <site name="tip_rb" pos="0.048 -0.0125 -0.01" size="0.01" rgba="0 1 0 1"/>
+                        </body>
+                    </body>
+                </body>
+            </body>
+            <!-- RIGHT FRONT LEG -->
+            <body name="motor_rf" pos="0 0.03 0.04" euler="0 90 0"> 
+                <geom name="motor_rf_vis" type="mesh" mesh="nema17_mesh" euler="-15 0 0" material="motor_grey"/>
+                <!-- z,x,y -->
+                <body name="femur_rf" pos="0.035 0.057 0.06"> 
+                    <joint name="hip_rf" type="hinge" axis="1 0 0" pos="0 -0.015 -0.03" range="-90 90"/>
+                    <geom name="femur_rf_vis" type="mesh" mesh="femur_mesh" euler="-15 180 0" material="crab_r"/>
+                    <!-- z,y,x -->
+                    <body name="merus_rf" pos="0.04 -0.0175 0.035">
+                        <joint name="knee_rf" type="hinge" axis="0 1 0" pos="-0.02 0 -0.02" range="-90 90"/>
+                        <geom name="merus_rf_vis" type="mesh" mesh="merus_mesh" euler="-15 60 90" material="crab_r"/>
+                        <!-- z,y,x -->
+                        <body name="dactyl_rf" pos="0.04 0.0275 0.001">
+                            <joint name="ankle_rf" type="hinge" axis="0 1 0" pos="-0.01 -0.02 -0.005" range="-60 60"/>
+                            <geom name="dactyl_rf_vis" type="mesh" mesh="dactyl_mesh" euler="-15 -90 0" material="crab_r" contype="1" conaffinity="1"/>
+                            <site name="tip_rf" pos="0.048 -0.0125 -0.01" size="0.01" rgba="0 1 0 1"/>
+                        </body>
+                    </body>
+                </body>
+            </body>
+
+
+            <!-- LEFT MIDDLE LEG  -->
+            <body name="motor_l" pos="0 0.03 0.04" euler="0 90 0"> 
+                <geom name="motor_l_vis" type="mesh" mesh="nema17_mesh" euler="0 180 180" material="motor_grey"/>
+                <body name="femur_l" pos="0.035 -0.041 -0.07"> 
+                    <joint name="hip_l" type="hinge" axis="1 0 0" pos="0 -0.015 -0.03" range="-90 90"/>
+                    <geom name="femur_l_vis" type="mesh" mesh="femur_mesh" euler="0 0 180" material="crab_r"/>
+                    <body name="merus_l" pos="0.05 0.025 -0.005"> 
+                        <joint name="knee_l" type="hinge" axis="0 1 0" pos="-0.02 0 -0.02" range="-90 90"/>
+                        <geom name="merus_l_vis" type="mesh" mesh="merus_mesh" euler="0 -60 -90" material="crab_r"/>
+                        <body name="dactyl_l" pos="0.03 -0.025 -0.03"> 
+                            <joint name="ankle_l" type="hinge" axis="0 1 0" pos="-0.01 0.02 -0.005" range="-60 60"/>
+                            <geom name="dactyl_l_vis" type="mesh" mesh="dactyl_mesh" euler="0 -90 180" material="crab_r" contype="1" conaffinity="1"/>
+                            <site name="tip_l" pos="0.048 0.0125 0.01" size="0.01" rgba="0 1 0 1"/>
+                        </body>
+                    </body>
+                </body>
+            </body>
+        </body>
+    </worldbody>
+
+    <actuator>
+        <!-- Right Legs Actuators -->
+        <position name="hip_rm_srv" joint="hip_rm" kp="200"/>
+        <position name="knee_rm_srv" joint="knee_rm" kp="150"/>
+        <position name="ankle_rm_srv" joint="ankle_rm" kp="150"/>
+        <position name="hip_rb_srv" joint="hip_rb" kp="200"/>
+        <position name="knee_rb_srv" joint="knee_rb" kp="150"/>
+        <position name="ankle_rb_srv" joint="ankle_rb" kp="150"/>
+        <position name="hip_rf_srv" joint="hip_rf" kp="200"/>
+        <position name="knee_rf_srv" joint="knee_rf" kp="150"/>
+        <position name="ankle_rf_srv" joint="ankle_rf" kp="150"/>
+
+        <!-- Left Legs Actuators -->
+        <position name="hip_l_srv" joint="hip_l" kp="200"/>
+        <position name="knee_l_srv" joint="knee_l" kp="150"/>
+        <position name="ankle_l_srv" joint="ankle_l" kp="150"/>
+    </actuator>
+
+    <default>
+        <joint damping="0.5" armature="0.01" stiffness="0"/>
+    </default>
+
+    <option gravity="0 0 -9.81" integrator="Euler" timestep="0.001"/>
+
+    <contact>
+        <!-- Right Leg Exclusions -->
+        <exclude body1="motor_rm" body2="femur_rm"/>
+        <exclude body1="femur_rm" body2="merus_rm"/>
+        <exclude body1="merus_rm" body2="dactyl_rm"/>
+        <exclude body1="motor_rb" body2="femur_rb"/>
+        <exclude body1="femur_rb" body2="merus_rb"/>
+        <exclude body1="merus_rb" body2="dactyl_rb"/>
+        <exclude body1="motor_rf" body2="femur_rf"/>
+        <exclude body1="femur_rf" body2="merus_rf"/>
+        <exclude body1="merus_rf" body2="dactyl_rf"/>
+        
+        <!-- Left Leg Exclusions -->
+        <exclude body1="motor_l" body2="femur_l"/>
+        <exclude body1="femur_l" body2="merus_l"/>
+        <exclude body1="merus_l" body2="dactyl_l"/>
+    </contact>
+
+
+</mujoco>
