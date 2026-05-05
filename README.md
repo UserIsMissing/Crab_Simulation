@@ -41,7 +41,7 @@ If you move the project directory or encounter a "bad interpreter" error, you mu
 
 3.  **Install Dependencies**:
     ```bash
-    pip install mujoco numpy matplotlib
+    pip install -r requirements.txt
     ```
 
 ---
@@ -61,6 +61,10 @@ The robot's physical properties are defined in `crab.xml`. The `base_shell` mass
 Run the main simulation loop using the MuJoCo-optimized Python interpreter for macOS rendering:
 ```bash
 ./mujoco_env/bin/mjpython simulate_crab.py
+```
+On Windows:
+```cmd
+python simulate_crab.py
 ```
 
 **Key Simulation Controls:**

@@ -1,0 +1,5 @@
+# pip install -r requirements.txt 
+pip install 
+mujoco
+numpy
+matplotlib
