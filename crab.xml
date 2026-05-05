@@ -87,24 +87,65 @@
                 </body>
             </body>
 
-
             <!-- LEFT MIDDLE LEG  -->
-            <body name="motor_l" pos="0 0.03 0.04" euler="0 90 0"> 
-                <geom name="motor_l_vis" type="mesh" mesh="nema17_mesh" euler="0 180 180" material="motor_grey"/>
-                <body name="femur_l" pos="0.035 -0.041 -0.07"> 
-                    <joint name="hip_l" type="hinge" axis="1 0 0" pos="0 -0.015 -0.03" range="-90 90"/>
-                    <geom name="femur_l_vis" type="mesh" mesh="femur_mesh" euler="0 0 180" material="crab_r"/>
-                    <body name="merus_l" pos="0.05 0.025 -0.005"> 
-                        <joint name="knee_l" type="hinge" axis="0 1 0" pos="-0.02 0 -0.02" range="-90 90"/>
-                        <geom name="merus_l_vis" type="mesh" mesh="merus_mesh" euler="0 -60 -90" material="crab_r"/>
-                        <body name="dactyl_l" pos="0.03 -0.025 -0.03"> 
-                            <joint name="ankle_l" type="hinge" axis="0 1 0" pos="-0.01 0.02 -0.005" range="-60 60"/>
-                            <geom name="dactyl_l_vis" type="mesh" mesh="dactyl_mesh" euler="0 -90 180" material="crab_r" contype="1" conaffinity="1"/>
-                            <site name="tip_l" pos="0.048 0.0125 0.01" size="0.01" rgba="0 1 0 1"/>
+            <body name="motor_lm" pos="0 0.03 0.04" euler="0 90 0"> 
+                <geom name="motor_lm_vis" type="mesh" mesh="nema17_mesh" euler="0 180 180" material="motor_grey"/>
+                <body name="femur_lm" pos="0.035 -0.041 -0.07"> 
+                    <joint name="hip_lm" type="hinge" axis="1 0 0" pos="0 -0.015 -0.03" range="-90 90"/>
+                    <geom name="femur_lm_vis" type="mesh" mesh="femur_mesh" euler="0 0 180" material="crab_r"/>
+                    <body name="merus_lm" pos="0.05 0.025 -0.005"> 
+                        <joint name="knee_lm" type="hinge" axis="0 1 0" pos="-0.02 0 -0.02" range="-90 90"/>
+                        <geom name="merus_lm_vis" type="mesh" mesh="merus_mesh" euler="0 -60 -90" material="crab_r"/>
+                        <body name="dactyl_lm" pos="0.03 -0.025 -0.03"> 
+                            <joint name="ankle_lm" type="hinge" axis="0 1 0" pos="-0.01 0.02 -0.005" range="-60 60"/>
+                            <geom name="dactyl_lm_vis" type="mesh" mesh="dactyl_mesh" euler="0 -90 180" material="crab_r" contype="1" conaffinity="1"/>
+                            <site name="tip_lm" pos="0.048 0.0125 0.01" size="0.01" rgba="0 1 0 1"/>
                         </body>
                     </body>
                 </body>
             </body>
+        <!-- LEFT BACK LEG -->
+            <body name="motor_lb" pos="0 -0.03 0.04" euler="0 -90 180"> 
+                <geom name="motor_lb_vis" type="mesh" mesh="nema17_mesh" euler="-15 0 0" material="motor_grey"/>
+                <!-- z,x,y -->
+                <body name="femur_lb" pos="0.035 0.057 0.06"> 
+                    <joint name="hip_lb" type="hinge" axis="1 0 0" pos="0 -0.015 -0.03" range="-90 90"/>
+                    <geom name="femur_lb_vis" type="mesh" mesh="femur_mesh" euler="-15 180 0" material="crab_r"/>
+                    <!-- z,y,x -->
+                    <body name="merus_lb" pos="0.04 -0.0175 0.035">
+                        <joint name="knee_lb" type="hinge" axis="0 1 0" pos="-0.02 0 -0.02" range="-90 90"/>
+                        <geom name="merus_lb_vis" type="mesh" mesh="merus_mesh" euler="-15 60 90" material="crab_r"/>
+                        <!-- z,y,x -->
+                        <body name="dactyl_lb" pos="0.04 0.0275 0.001">
+                            <joint name="ankle_lb" type="hinge" axis="0 1 0" pos="-0.01 -0.02 -0.005" range="-60 60"/>
+                            <geom name="dactyl_lb_vis" type="mesh" mesh="dactyl_mesh" euler="-15 -90 0" material="crab_r" contype="1" conaffinity="1"/>
+                            <site name="tip_lb" pos="0.048 -0.0125 -0.01" size="0.01" rgba="0 1 0 1"/>
+                        </body>
+                    </body>
+                </body>
+            </body>
+
+            <!-- LEFT FRONT LEG -->
+            <!-- x,y,z -->
+            <body name="motor_lf" pos="0.01 0.08 0.04" euler="0 -90 180"> 
+                <geom name="motor_lf_vis" type="mesh" mesh="nema17_mesh" euler="15 0 0" material="motor_grey"/>
+                <!-- z,x,y -->
+                <body name="femur_lf" pos="0.035 0.02 0.08"> 
+                    <joint name="hip_lf" type="hinge" axis="1 0 0" pos="0 -0.015 -0.03" range="-90 90"/>
+                    <geom name="femur_l_vis" type="mesh" mesh="femur_mesh" euler="15 180 0" material="crab_r"/>
+                    <!-- z,y,x -->
+                    <body name="merus_lf" pos="0.04 -0.032 0.02">
+                        <joint name="knee_lf" type="hinge" axis="0 1 0" pos="-0.02 0 -0.02" range="-90 90"/>
+                        <geom name="merus_lf_vis" type="mesh" mesh="merus_mesh" euler="15 60 90" material="crab_r"/>
+                        <!-- z,y,x -->
+                        <body name="dactyl_lf" pos="0.04 0.022 0.015">
+                            <joint name="ankle_lf" type="hinge" axis="0 1 0" pos="-0.01 -0.02 -0.005" range="-60 60"/>
+                            <geom name="dactyl_lf_vis" type="mesh" mesh="dactyl_mesh" euler="15 -90 0" material="crab_r" contype="1" conaffinity="1"/>
+                            <site name="tip_lf" pos="0.048 -0.0125 -0.01" size="0.01" rgba="0 1 0 1"/>
+                        </body>
+                    </body>
+                </body>
+            </body> 
         </body>
     </worldbody>
 
@@ -121,9 +162,15 @@
         <position name="ankle_rf_srv" joint="ankle_rf" kp="150"/>
 
         <!-- Left Legs Actuators -->
-        <position name="hip_l_srv" joint="hip_l" kp="200"/>
-        <position name="knee_l_srv" joint="knee_l" kp="150"/>
-        <position name="ankle_l_srv" joint="ankle_l" kp="150"/>
+        <position name="hip_lm_srv" joint="hip_lm" kp="200"/>
+        <position name="knee_lm_srv" joint="knee_lm" kp="150"/>
+        <position name="ankle_lm_srv" joint="ankle_lm" kp="150"/>
+        <position name="hip_lb_srv" joint="hip_lb" kp="200"/>
+        <position name="knee_lb_srv" joint="knee_lb" kp="150"/>
+        <position name="ankle_lb_srv" joint="ankle_lb" kp="150"/>
+        <position name="hip_lf_srv" joint="hip_lf" kp="200"/>
+        <position name="knee_lf_srv" joint="knee_lf" kp="150"/>
+        <position name="ankle_lf_srv" joint="ankle_lf" kp="150"/>
     </actuator>
 
     <default>
@@ -145,9 +192,15 @@
         <exclude body1="merus_rf" body2="dactyl_rf"/>
         
         <!-- Left Leg Exclusions -->
-        <exclude body1="motor_l" body2="femur_l"/>
-        <exclude body1="femur_l" body2="merus_l"/>
-        <exclude body1="merus_l" body2="dactyl_l"/>
+        <exclude body1="motor_lm" body2="femur_lm"/>
+        <exclude body1="femur_lm" body2="merus_lm"/>
+        <exclude body1="merus_lm" body2="dactyl_lm"/>
+        <exclude body1="motor_lb" body2="femur_lb"/>
+        <exclude body1="femur_lb" body2="merus_lb"/>
+        <exclude body1="merus_lb" body2="dactyl_lb"/>
+        <exclude body1="motor_lf" body2="femur_lf"/>
+        <exclude body1="femur_lf" body2="merus_lf"/>
+        <exclude body1="merus_lf" body2="dactyl_lf"/>
     </contact>
 
 

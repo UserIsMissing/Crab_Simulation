@@ -66,7 +66,7 @@ def get_lerp(start, end, percentage):
 
 def update_gait(model, data):
     # --- MODULAR TIMING CONFIG ---
-    cycle_duration = 4.0  
+    cycle_duration = 2.0  
     num_phases = 4
     step = cycle_duration / num_phases  # x seconds per phase
     
@@ -98,7 +98,7 @@ def update_gait(model, data):
     data.ctrl[1] = get_lerp(start_knee, end_knee, p_time)
     data.ctrl[2] = get_lerp(start_ankle, end_ankle, p_time)
 
-    # Note: You can apply the same logic to other legs 
+    # Apply the same logic to other legs 
     # or add a 'phase_offset' to create a tripod gait.
         
 # 2. Launch the viewer
