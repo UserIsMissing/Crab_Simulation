@@ -24,41 +24,24 @@ We utilize **Granular Resistive Force Theory (RFT)** to override standard contac
 
 ---
 
-## Installation
-
-1.  **Clone the Repository**:
-    ```bash
-    git clone https://github.com/[your-username]/[repo-name].git
-    cd [repo-name]
-    ```
-
-2.  **Install Dependencies**:
-    Ensure you have Python 3.8+ and the following packages installed:
-    ```bash
-    pip install mujoco numpy matplotlib
-    ```
-
----
-
-## Running the Simulation
-
-### 1. Configure the Robot (`crab.xml`)
-The robot's physical properties are defined in `crab.xml`. Ensure the `base_shell` mass is set to match the hardware calculations:
-```xml
-<body name="base_shell" pos="0 0 0.13">
-    <geom name="shell_visual" type="mesh" mesh="shell_mesh" mass="2.09"/>
-</body>
-```
-
-### 2. Execute the Environment (`simulate_crab.py`)
-Run the main simulation loop. This script handles the gait generation and the RFT force injection.
+## Installation & Setup
+1.  **Activate the Environment**:
+    
 ```bash
-python simulate_crab.py
+    python3 -m venv mujoco_env
+    source mujoco_env/bin/activate
+    ```
+
+
+2.  **Execute the Simulation**:
+Run the main simulation loop using the MuJoCo-optimized Python interpreter:
+```bash
+./mujoco_env/bin/mjpython simulate_crab.py
 ```
 
 **Key Simulation Controls:**
 *   **Gait Period**: Defined by `cycle_duration` (default: 4.0s) in `simulate_crab.py`.
-*   **Force Application**: The `apply_rft_forces()` function monitors the dactyl tip sites (`tip_rm`, `tip_l`, etc.) and applies forces only when the global vertical position $z < 0$.
+*   **Force Application**: The `apply_rft_forces()` function monitors the dactyl tip sites (`tip_rm`, `tip_l`, etc.) and applies resistive forces only when the global vertical position $z < 0$.
 
 ---
 
@@ -71,5 +54,5 @@ python simulate_crab.py
 ---
 
 ## Academic Context
-This work is part of an inquiry into how biological movements like crab gaits can be applied to granular terrain navigation and sifting. The model accounts for effective weight (W), vertical resistive force (Fz), and horizontal drag/thrust (Fh).
+This work is part of an inquiry into how biological movements like crab gaits can be applied to granular terrain navigation and sifting. The model accounts for effective weight ($W$), vertical resistive force ($F_z$), and horizontal drag/thrust ($F_h$).
 ```
