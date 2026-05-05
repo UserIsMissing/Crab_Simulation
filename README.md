@@ -27,17 +27,17 @@ We utilize **Granular Resistive Force Theory (RFT)** to override standard contac
 ## Installation & Setup
 1.  **Activate the Environment**:
     
-```bash
+bash
     python3 -m venv mujoco_env
     source mujoco_env/bin/activate
-    ```
 
 
 2.  **Execute the Simulation**:
 Run the main simulation loop using the MuJoCo-optimized Python interpreter:
-```bash
-./mujoco_env/bin/mjpython simulate_crab.py
-```
+
+bash
+    ./mujoco_env/bin/mjpython simulate_crab.py
+
 
 **Key Simulation Controls:**
 *   **Gait Period**: Defined by `cycle_duration` (default: 4.0s) in `simulate_crab.py`.
