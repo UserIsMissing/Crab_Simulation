@@ -12,16 +12,16 @@ Centralized control over physics parameters, leg mappings, and gait settings
 SAND_CONFIG = {
     # Vertical stiffness (N/m) - controls how rigid the sand feels
     # Higher = harder sand (less sinkage), Lower = softer sand (more sinkage)
-    'K_VERTICAL': 250.0,
+    'K_VERTICAL': 180.0,
     
     # Horizontal drag coefficient (N·s/m) - controls lateral resistance
     # Higher = more resistance to horizontal motion (sticky sand)
     # Lower = less resistance (loose sand)
-    'K_HORIZONTAL': 15.0,
+    'K_HORIZONTAL': 25.0,
     
     # Penetration threshold (m) - depth at which RFT forces start applying
     # Typically 0 (forces apply when z < 0, i.e., below ground plane)
-    'PENETRATION_THRESHOLD': 0.0,
+    'PENETRATION_THRESHOLD': 0.01,
 }
 
 # ============================================================================

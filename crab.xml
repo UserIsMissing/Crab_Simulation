@@ -10,6 +10,7 @@
         <material name="crab_l" rgba="0.2 0.8 0.8 1"/>
         <material name="motor_grey" rgba="0.2 0.2 0.2 1"/>
         <material name="shell_white" rgba="0.9 0.9 0.9 1"/>
+        <material name="sand_ground" rgba="0.76 0.70 0.50 1"/>
 
         <mesh name="shell_mesh" file="Shell.stl" scale="0.0254 0.0254 0.0254"/>
         <mesh name="nema17_mesh" file="Nema17.stl" scale="0.0254 0.0254 0.0254"/>
@@ -20,8 +21,10 @@
 
     <worldbody>
         <light diffuse=".5 .5 .5" pos="0 0 3" dir="0 0 -1"/>
-        <geom name="ground" type="plane" size="2 2 0.1" rgba=".9 .9 .9 0.5" contype="1" conaffinity="1"/>
-        <!-- <geom name="hard_floor" type="plane" pos="0 0 -0.005" size="2 2 0.01" rgba="0 0 0 0"/> -->
+        <!-- Collision ground (z=0) - where sand forces apply -->
+        <geom name="ground" type="plane" size="2 2 0.1" material="sand_ground" contype="1" conaffinity="1"/>
+        <!-- Visual surface ground (z=0.01) - at penetration threshold, shows leg sinkage effect -->
+        <geom name="ground_visual" type="plane" pos="0 0 0.01" size="2 2 0.1" material="sand_ground" contype="0" conaffinity="0"/>
 
         <body name="base_shell" pos="0 0 0.13">
             <freejoint/>
