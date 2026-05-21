@@ -6,16 +6,6 @@ Orchestrates gait control and sand physics
 import mujoco
 import mujoco.viewer
 import time
-import threading
-
-# Try to import keyboard library for pause/play functionality
-try:
-    import keyboard
-    KEYBOARD_AVAILABLE = True
-except ImportError:
-    KEYBOARD_AVAILABLE = False
-    print("Warning: 'keyboard' module not found. Pause/play disabled.")
-    print("Install with: pip install keyboard\n")
 
 # Import modular components
 from gait_controller import GaitController
@@ -51,74 +41,111 @@ if config.SIMULATION_CONFIG['verbose']:
 # SIMULATION LOOP
 # ============================================================================
 
-paused = False  # Pause/play state
+# Actuator order mirrors crab.xml — built once, used every step
+CONTROL_MAPPING = {
+    'hip_rm': 0,  'knee_rm': 1,  'ankle_rm': 2,
+    'hip_rb': 3,  'knee_rb': 4,  'ankle_rb': 5,
+    'hip_rf': 6,  'knee_rf': 7,  'ankle_rf': 8,
+    'hip_lm': 9,  'knee_lm': 10, 'ankle_lm': 11,
+    'hip_lb': 12, 'knee_lb': 13, 'ankle_lb': 14,
+    'hip_lf': 15, 'knee_lf': 16, 'ankle_lf': 17,
+}
 
-def toggle_pause():
-    """Callback for spacebar to toggle pause/play"""
-    global paused
-    paused = not paused
-    status = "PAUSED" if paused else "RUNNING"
-    print(f"Simulation {status} at t={data.time:.2f}s")
+# Speed control — - slows down, = speeds up
+SPEED_STEPS = [0.1, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0]
+speed_idx = SPEED_STEPS.index(1.0)
+speed_multiplier = 1.0
+paused = True  # Start paused to allow initial observation of the setup
 
-# Register keyboard listener if available
-if KEYBOARD_AVAILABLE:
-    keyboard.add_hotkey('space', toggle_pause)
+# Phase tracking — print on phase change and every PHASE_PRINT_INTERVAL sim-seconds
+PHASE_PRINT_INTERVAL = 0.5   # lower = more frequent updates, higher = less spam
+_prev_phase_A = -1
+_prev_phase_B = -1
+_last_print_t  = -PHASE_PRINT_INTERVAL  # force a print on the very first step
 
-with mujoco.viewer.launch_passive(model, data) as viewer:
-    if KEYBOARD_AVAILABLE:
-        print("▶ Beginning Brachyuran-inspired walking cycle...")
-        print("   Press SPACE to pause/resume")
-        print("   Close window to exit\n")
-    else:
-        print("▶ Beginning Brachyuran-inspired walking cycle...\n")
-    
+
+def key_callback(keycode):
+    """MuJoCo viewer key handler (GLFW key codes).
+
+    MuJoCo's built-in +/- speed control has no effect in launch_passive mode
+    because our Python loop owns the timing.  We intercept the same keycodes
+    here so the +/- buttons shown in the viewer UI actually work.
+    """
+    global paused, speed_multiplier, speed_idx
+
+    if keycode == 32:                       # SPACE — pause / resume
+        paused = not paused
+        state = "PAUSED" if paused else "RUNNING"
+        print(f"[{state}]  t = {data.time:.2f}s")
+
+    elif keycode in (61, 334):              # = / numpad+  →  faster
+        speed_idx = min(speed_idx + 1, len(SPEED_STEPS) - 1)
+        speed_multiplier = SPEED_STEPS[speed_idx]
+        print(f"Speed: {speed_multiplier}x real-time")
+
+    elif keycode in (45, 333):              # - / numpad-  →  slower
+        speed_idx = max(speed_idx - 1, 0)
+        speed_multiplier = SPEED_STEPS[speed_idx]
+        print(f"Speed: {speed_multiplier}x real-time")
+
+
+with mujoco.viewer.launch_passive(model, data, key_callback=key_callback) as viewer:
+    print("▶  Brachyuran-inspired walking cycle starting...")
+    print("   SPACE       pause / resume")
+    print("   -  /  =     slow down / speed up  (0.1x – 8x real-time)")
+    print("   Close window to exit\n")
+
     while viewer.is_running():
         step_start = time.time()
-        
+
         if not paused:
-            # Get current simulation time
             sim_time = data.time
-            
-            # 1. UPDATE GAIT - compute target joint angles
+
+            # 1. Compute target joint angles for all active legs
             joint_targets = gait_controller.compute_joint_targets(sim_time)
-            
-            # 2. APPLY CONTROLS - set joint targets
-            # Map targets to control indices based on XML actuator order
-            # Actuator order in crab.xml: hip_rm, knee_rm, ankle_rm, hip_rb, ..., ankle_lf
-            control_mapping = {
-                'hip_rm': 0,   'knee_rm': 1,   'ankle_rm': 2,
-                'hip_rb': 3,   'knee_rb': 4,   'ankle_rb': 5,
-                'hip_rf': 6,   'knee_rf': 7,   'ankle_rf': 8,
-                'hip_lm': 9,   'knee_lm': 10,  'ankle_lm': 11,
-                'hip_lb': 12,  'knee_lb': 13,  'ankle_lb': 14,
-                'hip_lf': 15,  'knee_lf': 16,  'ankle_lf': 17,
-            }
-            
+
+            # 2. Push targets to actuators
             for joint_name, target_value in joint_targets.items():
-                ctrl_idx = control_mapping.get(joint_name)
+                ctrl_idx = CONTROL_MAPPING.get(joint_name)
                 if ctrl_idx is not None:
                     data.ctrl[ctrl_idx] = target_value
-            
-            # 3. UPDATE SAND PHYSICS - apply RFT forces
+
+            # 3. Apply RFT sand forces
             sand_physics.update()
-            
-            # 4. STEP SIMULATION
+
+            # 4. Advance physics
             mujoco.mj_step(model, data)
-        
-        # 5. RENDER (always render, even when paused)
+
+            # 5. Phase tracking — print on phase change or every PHASE_PRINT_INTERVAL
+            off_A = config.LEG_PHASE_OFFSETS['tip_rf']
+            off_B = config.LEG_PHASE_OFFSETS['tip_rm']
+            pi_A  = gait_controller.get_phase_info(sim_time + off_A * gait_controller.cycle_duration)
+            pi_B  = gait_controller.get_phase_info(sim_time + off_B * gait_controller.cycle_duration)
+
+            phase_changed = (pi_A['phase_index'] != _prev_phase_A or
+                             pi_B['phase_index'] != _prev_phase_B)
+            time_due      = (sim_time - _last_print_t) >= PHASE_PRINT_INTERVAL
+
+            if phase_changed or time_due:
+                _prev_phase_A = pi_A['phase_index']
+                _prev_phase_B = pi_B['phase_index']
+                _last_print_t = sim_time
+                print(
+                    f"t={sim_time:6.2f}s │ "
+                    f"A [rf,lm,rb]: {pi_A['phase_name']:<8} {pi_A['time_in_phase']*100:3.0f}% │ "
+                    f"B [rm,lf,lb]: {pi_B['phase_name']:<8} {pi_B['time_in_phase']*100:3.0f}%"
+                )
+
+        # 5. Render every iteration (including while paused)
         viewer.sync()
-        
-        # 6. REAL-TIME SYNCHRONIZATION (skip sleep if paused)
+
+        # 6. Real-time pacing — divide timestep by speed multiplier so that
+        #    >1x sleeps less (faster) and <1x sleeps more (slow-motion).
         if not paused:
-            time_until_next_step = model.opt.timestep - (time.time() - step_start)
-            if time_until_next_step > 0:
-                time.sleep(time_until_next_step)
+            target_step = model.opt.timestep / speed_multiplier
+            elapsed = time.time() - step_start
+            remaining = target_step - elapsed
+            if remaining > 0:
+                time.sleep(remaining)
         else:
-            # When paused, just render at a reasonable frame rate
-            time.sleep(0.016)  # ~60 FPS
-        
-        # 7. DEBUG OUTPUT (optional)
-        if config.SIMULATION_CONFIG['verbose'] and int(data.time * 10) % 10 == 0:
-            # Print status every 1 second
-            pass  # Uncomment below to debug
-            # gait_controller.print_status(data.time)
+            time.sleep(0.016)   # ~60 FPS while paused

@@ -32,15 +32,35 @@ SAND_CONFIG = {
 # Currently controlled: only 'rm' (Right Middle)
 
 LEG_TIPS = {
-    # Right Side Legs
-    'tip_rm': {'body': 'dactyl_rm', 'name': 'Right Middle', 'active': True},
-    'tip_rb': {'body': 'dactyl_rb', 'name': 'Right Back', 'active': False},
-    'tip_rf': {'body': 'dactyl_rf', 'name': 'Right Front', 'active': False},
-    
-    # Left Side Legs
-    'tip_lm': {'body': 'dactyl_lm', 'name': 'Left Middle', 'active': False},
-    'tip_lb': {'body': 'dactyl_lb', 'name': 'Left Back', 'active': False},
-    'tip_lf': {'body': 'dactyl_lf', 'name': 'Left Front', 'active': False},
+    # reverse=True  → leg runs its keyframe sequence backwards in time.
+    #
+    # For rightward locomotion:
+    #   rf, rb  — normal:   reach right, plant, pull body right
+    #   rm      — reversed: contracts while rf/rb extend (inverted from right side)
+    #   lf, lb  — reversed: push body right (mirror of right-side motion)
+    #   lm      — normal:   contracts while lf/lb push (inverted-of-reversed = normal)
+    'tip_rf': {'body': 'dactyl_rf', 'name': 'Right Front',  'active': True,  'reverse': False},
+    'tip_rb': {'body': 'dactyl_rb', 'name': 'Right Back',   'active': True,  'reverse': False},
+    'tip_rm': {'body': 'dactyl_rm', 'name': 'Right Middle', 'active': True,  'reverse': True},
+    'tip_lf': {'body': 'dactyl_lf', 'name': 'Left Front',   'active': True,  'reverse': True},
+    'tip_lb': {'body': 'dactyl_lb', 'name': 'Left Back',    'active': True,  'reverse': True},
+    'tip_lm': {'body': 'dactyl_lm', 'name': 'Left Middle',  'active': True,  'reverse': False},
+}
+
+# ============================================================================
+# GAIT PHASE OFFSETS
+# ============================================================================
+# Right side and left side alternate 180° out of phase.
+# reverse=True (in LEG_TIPS) makes a leg run its keyframes backwards —
+# no extra phase offset needed for the middle legs.
+
+LEG_PHASE_OFFSETS = {
+    'tip_rf': 0.0,   # Right group
+    'tip_rb': 0.0,   # Right group
+    'tip_rm': 0.0,   # Right group  (reversed → contracts while rf/rb extend)
+    'tip_lf': 0.5,   # Left group
+    'tip_lb': 0.5,   # Left group
+    'tip_lm': 0.5,   # Left group   (normal  → contracts while lf/lb push)
 }
 
 # ============================================================================
@@ -50,23 +70,40 @@ LEG_TIPS = {
 GAIT_CONFIG = {
     # Total cycle duration (seconds) - time for one complete gait cycle
     'cycle_duration': 2.0,
-    
+
     # Number of phases per cycle
     # Phase 0: Lift, Phase 1: Reach, Phase 2: Stab, Phase 3: Recover
-    'num_phases': 4,
-    
+    'num_phases': 5,
+
     # Hip control (mostly for balance, currently set to neutral)
     'hip_target': 0.0,  # Radians or normalized units
-    
-    # Keyframe positions for gait animation (knee, ankle angles)
-    # Each tuple is (knee_angle, ankle_angle) at the END of each phase
+
+    # Seconds to blend from the neutral standing pose into the full gait.
+    # Prevents the violent torque spike at t=0 that flips the robot.
+    'warmup_duration': 2.0,
+
+    # Keyframe positions for gait animation (knee, ankle angles in radians)
+    # Each tuple is (knee_angle, ankle_angle) at the END of each phase.
     # Phases: [Init, Lift, Reach, Stab, Recover/Loop]
+    # Note: keyframes[0] also serves as the neutral standing pose for warmup.
     'keyframes': [
-        (0.0,  0.5),   # Initial/Recovery State
-        (-1.0, 0.1),   # End of Phase 0 (Lift leg up)
-        (-1.0, -0.5),  # End of Phase 1 (Reach forward)
-        (1.0,  -0.5),  # End of Phase 2 (Stab into sand)
-        (0.0,  0.5)    # End of Phase 3 (Recover to start)
+        # (knee, ankle) in radians
+        # knee negative = leg lifts up   |   knee positive = leg pushes down
+        # ankle negative = toe extends   |   ankle positive = toe curls back
+
+        # Testing keyframes for visual debugging
+        # (-0.2, -0.2),
+        # (-0.2, -0.2),
+        # (-0.2, -0.2),
+        # (-0.2, -0.2),
+        # (-0.2, -0.2)
+        
+        (-0.2, -0.2),   # [0] Standing pose / recovery end
+        (-0.8, -0.2),     # [1] Lift    — knee folds all the way up
+        (-0.8, -0.8),     # [2] stretch — ankle extends up
+        (0.0, -0.8),     # [3] Reach   — knee lowers to touch ground
+        (0.8, 0.8),   # [4] Stab    — knee pushes down into sand (reduced from 1.0)
+        (-0.2,  -0.2)   # [5] Recover — return to standing pose
     ],
 }
 
