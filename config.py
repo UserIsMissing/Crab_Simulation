@@ -92,18 +92,19 @@ GAIT_CONFIG = {
         # ankle negative = toe extends   |   ankle positive = toe curls back
 
         # Testing keyframes for visual debugging
-        # (-0.2, -0.2),
-        # (-0.2, -0.2),
-        # (-0.2, -0.2),
-        # (-0.2, -0.2),
-        # (-0.2, -0.2)
+        (-0.8, -0.8),
+        (0.2, -0.8),
+        (0.8, 0.8),
+        (-0.2, 1.0),  
+        (-0.6, 0.8),  
+        (-0.8,  -0.8)
         
-        (-0.2, -0.2),   # [0] Standing pose / recovery end
-        (-0.8, -0.2),     # [1] Lift    — knee folds all the way up
-        (-0.8, -0.8),     # [2] stretch — ankle extends up
-        (0.0, -0.8),     # [3] Reach   — knee lowers to touch ground
-        (0.8, 0.8),   # [4] Stab    — knee pushes down into sand (reduced from 1.0)
-        (-0.2,  -0.2)   # [5] Recover — return to standing pose
+        # (-0.2, -0.2),   # [0] Standing pose / recovery end
+        # (-0.8, -0.2),     # [1] Lift    — knee folds all the way up
+        # (-0.8, -0.8),     # [2] stretch — ankle extends up
+        # (1.0, 1.0),     # [3] Reach   — knee lowers to touch ground
+        # (0.5, 0.5),   # [4] Stab    — knee pushes down into sand (reduced from 1.0)
+        # (-0.2,  -0.2)   # [5] Recover — return to standing pose
     ],
 }
 

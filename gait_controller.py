@@ -68,7 +68,7 @@ class GaitController:
         cycle_progress = wrapped_time / self.cycle_duration
         
         # Phase names for debugging
-        phase_names = ['Lift', 'Reach', 'Stab', 'Recover']
+        phase_names = ['Lift', 'stretch', 'Reach', 'Stab', 'Recover']
         phase_name = phase_names[phase_index] if phase_index < len(phase_names) else 'Unknown'
         
         return {

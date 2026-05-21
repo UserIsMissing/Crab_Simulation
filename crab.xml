@@ -22,7 +22,8 @@
     <worldbody>
         <light diffuse=".5 .5 .5" pos="0 0 3" dir="0 0 -1"/>
         <!-- Collision ground (z=0) - where sand forces apply -->
-        <geom name="ground" type="plane" size="2 2 0.1" material="sand_ground" contype="1" conaffinity="1"/>
+        <geom name="ground" type="plane" size="2 2 0.1" material="sand_ground" contype="1" conaffinity="1"
+              solref="0.04 1.5" solimp="0.9 0.99 0.001" friction="1.0 0.005 0.0001"/>
         <!-- Visual surface ground (z=0.01) - at penetration threshold, shows leg sinkage effect -->
         <geom name="ground_visual" type="plane" pos="0 0 0.01" size="2 2 0.1" material="sand_ground" contype="0" conaffinity="0"/>
 
@@ -155,30 +156,36 @@
 
     <actuator>
         <!-- Right Legs Actuators -->
-        <position name="hip_rm_srv" joint="hip_rm" kp="200"/>
-        <position name="knee_rm_srv" joint="knee_rm" kp="150"/>
-        <position name="ankle_rm_srv" joint="ankle_rm" kp="150"/>
-        <position name="hip_rb_srv" joint="hip_rb" kp="200"/>
-        <position name="knee_rb_srv" joint="knee_rb" kp="150"/>
-        <position name="ankle_rb_srv" joint="ankle_rb" kp="150"/>
-        <position name="hip_rf_srv" joint="hip_rf" kp="200"/>
-        <position name="knee_rf_srv" joint="knee_rf" kp="150"/>
-        <position name="ankle_rf_srv" joint="ankle_rf" kp="150"/>
+        <position name="hip_rm_srv" joint="hip_rm" kp="80"/>
+        <position name="knee_rm_srv" joint="knee_rm" kp="60"/>
+        <position name="ankle_rm_srv" joint="ankle_rm" kp="60"/>
+        <position name="hip_rb_srv" joint="hip_rb" kp="80"/>
+        <position name="knee_rb_srv" joint="knee_rb" kp="60"/>
+        <position name="ankle_rb_srv" joint="ankle_rb" kp="60"/>
+        <position name="hip_rf_srv" joint="hip_rf" kp="80"/>
+        <position name="knee_rf_srv" joint="knee_rf" kp="60"/>
+        <position name="ankle_rf_srv" joint="ankle_rf" kp="60"/>
 
         <!-- Left Legs Actuators -->
-        <position name="hip_lm_srv" joint="hip_lm" kp="200"/>
-        <position name="knee_lm_srv" joint="knee_lm" kp="150"/>
-        <position name="ankle_lm_srv" joint="ankle_lm" kp="150"/>
-        <position name="hip_lb_srv" joint="hip_lb" kp="200"/>
-        <position name="knee_lb_srv" joint="knee_lb" kp="150"/>
-        <position name="ankle_lb_srv" joint="ankle_lb" kp="150"/>
-        <position name="hip_lf_srv" joint="hip_lf" kp="200"/>
-        <position name="knee_lf_srv" joint="knee_lf" kp="150"/>
-        <position name="ankle_lf_srv" joint="ankle_lf" kp="150"/>
+        <position name="hip_lm_srv" joint="hip_lm" kp="80"/>
+        <position name="knee_lm_srv" joint="knee_lm" kp="60"/>
+        <position name="ankle_lm_srv" joint="ankle_lm" kp="60"/>
+        <position name="hip_lb_srv" joint="hip_lb" kp="80"/>
+        <position name="knee_lb_srv" joint="knee_lb" kp="60"/>
+        <position name="ankle_lb_srv" joint="ankle_lb" kp="60"/>
+        <position name="hip_lf_srv" joint="hip_lf" kp="80"/>
+        <position name="knee_lf_srv" joint="knee_lf" kp="60"/>
+        <position name="ankle_lf_srv" joint="ankle_lf" kp="60"/>
     </actuator>
 
     <default>
-        <joint damping="0.5" armature="0.01" stiffness="0"/>
+        <!-- damping: energy dissipation in joints (higher = less oscillation)   -->
+        <!-- armature: motor inertia (resists rapid velocity changes)            -->
+        <joint damping="5.0" armature="0.1" stiffness="0"/>
+        <!-- solref: contact resolution [timeconst dampratio]                    -->
+        <!--   dampratio > 1.0 = overdamped contact = no bounce on landing       -->
+        <!-- solimp: contact impedance [dmin dmax width]                         -->
+        <geom solref="0.04 1.5" solimp="0.9 0.99 0.001"/>
     </default>
 
     <option gravity="0 0 -9.81" integrator="Euler" timestep="0.001"/>
