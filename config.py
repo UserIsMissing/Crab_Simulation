@@ -32,35 +32,36 @@ SAND_CONFIG = {
 # Currently controlled: only 'rm' (Right Middle)
 
 LEG_TIPS = {
-    # reverse=True  → leg runs its keyframe sequence backwards in time.
-    #
-    # For rightward locomotion:
-    #   rf, rb  — normal:   reach right, plant, pull body right
-    #   rm      — reversed: contracts while rf/rb extend (inverted from right side)
-    #   lf, lb  — reversed: push body right (mirror of right-side motion)
-    #   lm      — normal:   contracts while lf/lb push (inverted-of-reversed = normal)
-    'tip_rf': {'body': 'dactyl_rf', 'name': 'Right Front',  'active': True,  'reverse': False},
-    'tip_rb': {'body': 'dactyl_rb', 'name': 'Right Back',   'active': True,  'reverse': False},
-    'tip_rm': {'body': 'dactyl_rm', 'name': 'Right Middle', 'active': True,  'reverse': True},
-    'tip_lf': {'body': 'dactyl_lf', 'name': 'Left Front',   'active': True,  'reverse': True},
-    'tip_lb': {'body': 'dactyl_lb', 'name': 'Left Back',    'active': True,  'reverse': True},
-    'tip_lm': {'body': 'dactyl_lm', 'name': 'Left Middle',  'active': True,  'reverse': False},
+    # mirror=True → right-side leg: negate angles to match mirrored joint geometry.
+    #   Right joints are physically flipped — negation makes them produce the
+    #   same physical motion as their left-side counterparts in the keyframes.
+    #   This is a static hardware fact, independent of gait group or timing.
+    'tip_lf': {'body': 'dactyl_lf', 'name': 'Left Front',   'active': True, 'mirror': False},
+    'tip_lb': {'body': 'dactyl_lb', 'name': 'Left Back',    'active': True, 'mirror': False},
+    'tip_lm': {'body': 'dactyl_lm', 'name': 'Left Middle',  'active': True, 'mirror': False},
+    'tip_rf': {'body': 'dactyl_rf', 'name': 'Right Front',  'active': True, 'mirror': True},
+    'tip_rb': {'body': 'dactyl_rb', 'name': 'Right Back',   'active': True, 'mirror': True},
+    'tip_rm': {'body': 'dactyl_rm', 'name': 'Right Middle', 'active': True, 'mirror': True},
 }
 
 # ============================================================================
 # GAIT PHASE OFFSETS
 # ============================================================================
-# Right side and left side alternate 180° out of phase.
-# reverse=True (in LEG_TIPS) makes a leg run its keyframes backwards —
-# no extra phase offset needed for the middle legs.
+# Group A (0.0): lf, lb, rm — lift and step together
+# Group B (0.5): rf, rb, lm — hold the robot stable while A moves, then step
+#
+# The 0.5 offset is the ONLY thing making the groups oppose each other.
+# Group B runs the same keyframe sequence, starting half a cycle later —
+# when A is lifting, B is mid-push; when A plants, B starts lifting.
+# No extra negation is applied for being in Group B.
 
 LEG_PHASE_OFFSETS = {
-    'tip_rf': 0.0,   # Right group
-    'tip_rb': 0.0,   # Right group
-    'tip_rm': 0.0,   # Right group  (reversed → contracts while rf/rb extend)
-    'tip_lf': 0.5,   # Left group
-    'tip_lb': 0.5,   # Left group
-    'tip_lm': 0.5,   # Left group   (normal  → contracts while lf/lb push)
+    'tip_lf': 0.0,   # Group A
+    'tip_lb': 0.0,   # Group A
+    'tip_rm': 0.0,   # Group A  (mirror=True handles geometry, not group)
+    'tip_rf': 0.5,   # Group B  (mirror=True handles geometry, not group)
+    'tip_rb': 0.5,   # Group B  (mirror=True handles geometry, not group)
+    'tip_lm': 0.5,   # Group B
 }
 
 # ============================================================================
@@ -69,7 +70,7 @@ LEG_PHASE_OFFSETS = {
 
 GAIT_CONFIG = {
     # Total cycle duration (seconds) - time for one complete gait cycle
-    'cycle_duration': 2.0,
+    'cycle_duration': 4.0,
 
     # Number of phases per cycle
     # Phase 0: Lift, Phase 1: Reach, Phase 2: Stab, Phase 3: Recover

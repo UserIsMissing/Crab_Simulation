@@ -141,24 +141,20 @@ class GaitController:
             leg_time = sim_time + phase_offset * self.cycle_duration
 
             phase_info = self.get_phase_info(leg_time)
-
-            if leg_info.get('reverse', False):
-                # Run keyframes backwards: at cycle_progress p, use (1-p) % 1.
-                # When group mates are in Lift (p≈0, going up),
-                # this leg runs backward through Recover/Stab (going down).
-                rev_p       = (1.0 - phase_info['cycle_progress']) % 1.0
-                rev_wrapped = rev_p * self.cycle_duration
-                rev_idx     = min(int(rev_wrapped // self.phase_duration), self.num_phases - 1)
-                rev_t       = (rev_wrapped % self.phase_duration) / self.phase_duration
-                gait_knee, gait_ankle = self.interpolate_keyframes(rev_idx, rev_t)
-            else:
-                gait_knee, gait_ankle = self.interpolate_keyframes(
-                    phase_info['phase_index'], phase_info['time_in_phase']
-                )
+            gait_knee, gait_ankle = self.interpolate_keyframes(
+                phase_info['phase_index'], phase_info['time_in_phase']
+            )
 
             # During warmup, interpolate from neutral toward the gait target
             knee  = neutral_knee  + (gait_knee  - neutral_knee)  * warmup_blend
             ankle = neutral_ankle + (gait_ankle - neutral_ankle) * warmup_blend
+
+            # mirror=True: right-side leg — negate angles to match mirrored joint
+            # geometry.  This is purely a hardware correction; it has nothing to
+            # do with gait group or timing (that is handled by phase offset only).
+            if leg_info.get('mirror', False):
+                knee  = -knee
+                ankle = -ankle
 
             targets[f'hip_{leg_id}']   = self.hip_target
             targets[f'knee_{leg_id}']  = knee

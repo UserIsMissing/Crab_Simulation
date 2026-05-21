@@ -117,23 +117,23 @@ with mujoco.viewer.launch_passive(model, data, key_callback=key_callback) as vie
             mujoco.mj_step(model, data)
 
             # 5. Phase tracking — print on phase change or every PHASE_PRINT_INTERVAL
-            off_A = config.LEG_PHASE_OFFSETS['tip_rf']
-            off_B = config.LEG_PHASE_OFFSETS['tip_rm']
-            pi_A  = gait_controller.get_phase_info(sim_time + off_A * gait_controller.cycle_duration)
-            pi_B  = gait_controller.get_phase_info(sim_time + off_B * gait_controller.cycle_duration)
+            off_1 = config.LEG_PHASE_OFFSETS['tip_lf']
+            off_2 = config.LEG_PHASE_OFFSETS['tip_rf']
+            pi_1  = gait_controller.get_phase_info(sim_time + off_1 * gait_controller.cycle_duration)
+            pi_2  = gait_controller.get_phase_info(sim_time + off_2 * gait_controller.cycle_duration)
 
-            phase_changed = (pi_A['phase_index'] != _prev_phase_A or
-                             pi_B['phase_index'] != _prev_phase_B)
+            phase_changed = (pi_1['phase_index'] != _prev_phase_A or
+                             pi_2['phase_index'] != _prev_phase_B)
             time_due      = (sim_time - _last_print_t) >= PHASE_PRINT_INTERVAL
 
             if phase_changed or time_due:
-                _prev_phase_A = pi_A['phase_index']
-                _prev_phase_B = pi_B['phase_index']
+                _prev_phase_A = pi_1['phase_index']
+                _prev_phase_B = pi_2['phase_index']
                 _last_print_t = sim_time
                 print(
                     f"t={sim_time:6.2f}s │ "
-                    f"A [rf,lm,rb]: {pi_A['phase_name']:<8} {pi_A['time_in_phase']*100:3.0f}% │ "
-                    f"B [rm,lf,lb]: {pi_B['phase_name']:<8} {pi_B['time_in_phase']*100:3.0f}%"
+                    f"G1 [lf,lb,rm↕]: {pi_1['phase_name']:<8} {pi_1['time_in_phase']*100:3.0f}% │ "
+                    f"G2 [rf,rb,lm↕]: {pi_2['phase_name']:<8} {pi_2['time_in_phase']*100:3.0f}%"
                 )
 
         # 5. Render every iteration (including while paused)
