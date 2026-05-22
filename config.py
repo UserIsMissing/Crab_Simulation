@@ -32,16 +32,16 @@ SAND_CONFIG = {
 # Currently controlled: only 'rm' (Right Middle)
 
 LEG_TIPS = {
-    # mirror=True → right-side leg: negate angles to match mirrored joint geometry.
-    #   Right joints are physically flipped — negation makes them produce the
-    #   same physical motion as their left-side counterparts in the keyframes.
-    #   This is a static hardware fact, independent of gait group or timing.
-    'tip_lf': {'body': 'dactyl_lf', 'name': 'Left Front',   'active': True, 'mirror': False},
-    'tip_lb': {'body': 'dactyl_lb', 'name': 'Left Back',    'active': True, 'mirror': False},
-    'tip_lm': {'body': 'dactyl_lm', 'name': 'Left Middle',  'active': True, 'mirror': False},
-    'tip_rf': {'body': 'dactyl_rf', 'name': 'Right Front',  'active': True, 'mirror': True},
-    'tip_rb': {'body': 'dactyl_rb', 'name': 'Right Back',   'active': True, 'mirror': True},
-    'tip_rm': {'body': 'dactyl_rm', 'name': 'Right Middle', 'active': True, 'mirror': True},
+    # mirror=True     → right-side leg: all angles negated (geometry correction).
+    # keyframe_set    → which sequence this leg uses.
+    #   'standard'    → front and back legs
+    #   'middle'      → middle legs (tune separately to fix geometry differences)
+    'tip_lf': {'body': 'dactyl_lf', 'name': 'Left Front',   'active': True, 'mirror': False, 'keyframe_set': 'standard'},
+    'tip_lb': {'body': 'dactyl_lb', 'name': 'Left Back',    'active': True, 'mirror': False, 'keyframe_set': 'standard'},
+    'tip_lm': {'body': 'dactyl_lm', 'name': 'Left Middle',  'active': True, 'mirror': False, 'keyframe_set': 'middle'},
+    'tip_rf': {'body': 'dactyl_rf', 'name': 'Right Front',  'active': True, 'mirror': True,  'keyframe_set': 'standard'},
+    'tip_rb': {'body': 'dactyl_rb', 'name': 'Right Back',   'active': True, 'mirror': True,  'keyframe_set': 'standard'},
+    'tip_rm': {'body': 'dactyl_rm', 'name': 'Right Middle', 'active': True, 'mirror': True,  'keyframe_set': 'middle'},
 }
 
 # ============================================================================
@@ -72,8 +72,7 @@ GAIT_CONFIG = {
     # Total cycle duration (seconds) - time for one complete gait cycle
     'cycle_duration': 4.0,
 
-    # Number of phases per cycle
-    # Phase 0: Lift, Phase 1: Reach, Phase 2: Stab, Phase 3: Recover
+    # Number of phases per cycle — must equal len(keyframe_sets[*]) - 1
     'num_phases': 5,
 
     # Hip control (mostly for balance, currently set to neutral)
@@ -83,30 +82,56 @@ GAIT_CONFIG = {
     # Prevents the violent torque spike at t=0 that flips the robot.
     'warmup_duration': 2.0,
 
-    # Keyframe positions for gait animation (knee, ankle angles in radians)
-    # Each tuple is (knee_angle, ankle_angle) at the END of each phase.
-    # Phases: [Init, Lift, Reach, Stab, Recover/Loop]
-    # Note: keyframes[0] also serves as the neutral standing pose for warmup.
-    'keyframes': [
-        # (knee, ankle) in radians
-        # knee negative = leg lifts up   |   knee positive = leg pushes down
-        # ankle negative = toe extends   |   ankle positive = toe curls back
+    # Two named keyframe sets — (knee, ankle) tuples, one per phase boundary.
+    # knee negative = leg lifts up   |  knee positive = leg pushes down
+    # ankle negative = toe extends   |  ankle positive = toe curls back
+    # Right-side legs get all values negated automatically via mirror=True.
+    'keyframe_sets': {
 
-        # Testing keyframes for visual debugging
-        (-0.8, -0.8),
-        (0.2, -0.8),
-        (0.8, 0.8),
-        (-0.2, 1.0),  
-        (-0.6, 0.8),  
-        (-0.8,  -0.8)
-        
-        # (-0.2, -0.2),   # [0] Standing pose / recovery end
-        # (-0.8, -0.2),     # [1] Lift    — knee folds all the way up
-        # (-0.8, -0.8),     # [2] stretch — ankle extends up
-        # (1.0, 1.0),     # [3] Reach   — knee lowers to touch ground
-        # (0.5, 0.5),   # [4] Stab    — knee pushes down into sand (reduced from 1.0)
-        # (-0.2,  -0.2)   # [5] Recover — return to standing pose
-    ],
+        # ── Front and back legs (lf, lb, rf, rb) ──────────────────────────
+        'standard': [
+            (-0.8, -0.8),   # [0]  standing / recovery
+            ( 0.4, -0.8),   # [2]
+            ( 0.8, 0.6),   # [3]
+            (-0.2,  0.8),   # [4]
+            (-0.4,  0.2),   # [5]
+            (-0.8, -0.8),   # [10] back to standing
+
+            # (-0.8, -0.8),   # [0]  standing / recovery
+            # ( 0.2, -0.8),   # [1]
+            # ( 0.4, -0.8),   # [2]
+            # ( 0.6, -0.6),   # [3]
+            # ( 0.8,  0.2),   # [4]
+            # ( 0.8,  0.5),   # [5]
+            # ( 0.2,  0.8),   # [6]
+            # (-0.2,  1.0),   # [7]
+            # (-0.6,  0.8),   # [8]
+            # (-0.8, -0.2),   # [9]
+            # (-0.8, -0.8),   # [10] back to standing
+        ],
+
+        # ── Middle legs (lm, rm) — tune these to match middle-leg geometry ─
+        'middle': [
+            (-0.8, -0.8),   # [0]  standing / recovery
+            ( 0.4, -0.8),   # [2]
+            ( 0.8, 0.6),   # [3]
+            (-0.2,  0.8),   # [4]
+            (-0.4,  0.2),   # [5]
+            (-0.8, -0.8),   # [10] back to standing
+
+            # (-0.8, -0.8),   # [0]  standing / recovery
+            # ( 0.2, -0.8),   # [1]
+            # ( 0.4, -0.8),   # [2]
+            # ( 0.6, -0.6),   # [3]
+            # ( 0.8,  0.2),   # [4]
+            # ( 0.8,  0.5),   # [5]
+            # ( 0.2,  0.8),   # [6]
+            # (-0.2,  1.0),   # [7]
+            # (-0.6,  0.8),   # [8]
+            # (-0.8, -0.2),   # [9]
+            # (-0.8, -0.8),   # [10] back to standing
+        ],
+    },
 }
 
 # ============================================================================

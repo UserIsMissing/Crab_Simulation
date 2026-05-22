@@ -24,16 +24,30 @@ class GaitController:
         
         self.cycle_duration   = gait_params.get('cycle_duration', 2.0)
         self.num_phases       = gait_params.get('num_phases', 4)
-        self.keyframes        = gait_params.get('keyframes', [])
         self.hip_target       = gait_params.get('hip_target', 0.0)
         self.warmup_duration  = gait_params.get('warmup_duration', 2.0)
 
-        # Validate keyframes
-        if len(self.keyframes) != self.num_phases + 1:
-            raise ValueError(
-                f"Number of keyframes ({len(self.keyframes)}) must equal "
-                f"num_phases + 1 ({self.num_phases + 1})"
-            )
+        # Build named keyframe sets.
+        # Config can supply either:
+        #   'keyframe_sets': {'standard': [...], 'middle': [...], ...}
+        # or the legacy single 'keyframes' list (becomes the 'standard' set).
+        sets = gait_params.get('keyframe_sets', None)
+        if sets is not None:
+            self.keyframe_sets = sets
+        else:
+            self.keyframe_sets = {'standard': gait_params.get('keyframes', [])}
+
+        # Validate every set has the right length
+        for name, kf in self.keyframe_sets.items():
+            if len(kf) != self.num_phases + 1:
+                raise ValueError(
+                    f"Keyframe set '{name}' has {len(kf)} entries; "
+                    f"need num_phases + 1 = {self.num_phases + 1}"
+                )
+
+        # Convenience reference to the default set
+        self.keyframes = self.keyframe_sets.get('standard',
+                         next(iter(self.keyframe_sets.values())))
 
         # Compute phase duration
         self.phase_duration = self.cycle_duration / self.num_phases
@@ -85,25 +99,19 @@ class GaitController:
         Eliminates the abrupt velocity jump at every phase boundary."""
         return (1.0 - np.cos(np.pi * t)) / 2.0
 
-    def interpolate_keyframes(self, phase_index, progress):
+    def interpolate_keyframes(self, phase_index, progress, keyframes=None):
         """
-        Interpolate between keyframes using cosine easing for smooth motion.
-
-        Args:
-            phase_index: Current phase (0 to num_phases-1)
-            progress: Normalized progress through phase (0.0 to 1.0)
-
-        Returns:
-            (knee_angle, ankle_angle) interpolated values
+        Interpolate between two keyframe tuples using cosine easing.
+        Pass keyframes= to use a specific set; defaults to self.keyframes.
         """
-        start_knee, start_ankle = self.keyframes[phase_index]
-        end_knee, end_ankle = self.keyframes[phase_index + 1]
-
+        kf = keyframes if keyframes is not None else self.keyframes
+        start_knee, start_ankle = kf[phase_index]
+        end_knee,   end_ankle   = kf[phase_index + 1]
         t = self._smooth_step(progress)
-        knee  = start_knee  + (end_knee  - start_knee)  * t
-        ankle = start_ankle + (end_ankle - start_ankle) * t
-
-        return knee, ankle
+        return (
+            start_knee  + (end_knee  - start_knee)  * t,
+            start_ankle + (end_ankle - start_ankle) * t,
+        )
     
     def compute_joint_targets(self, sim_time):
         """
@@ -121,10 +129,6 @@ class GaitController:
                 ... (for all active legs)
             }
         """
-        # Warmup: blend from keyframes[0] (neutral standing pose) to the full
-        # gait target over warmup_duration seconds.  Prevents the large torque
-        # spike at t=0 that causes the robot to bounce/flip on startup.
-        neutral_knee, neutral_ankle = self.keyframes[0]
         warmup_blend = self._smooth_step(min(sim_time / self.warmup_duration, 1.0))
 
         targets = {}
@@ -135,23 +139,28 @@ class GaitController:
 
             leg_id = leg_name.replace('tip_', '')
 
-            # Shift this leg's clock by its phase offset so tripod groups
+            # Pick keyframe set — legs specify 'keyframe_set' in LEG_TIPS;
+            # defaults to 'standard' if not set.
+            set_name = leg_info.get('keyframe_set', 'standard')
+            kf = self.keyframe_sets.get(set_name, self.keyframes)
+            neutral_knee, neutral_ankle = kf[0]
+
+            # Shift this leg's clock by its phase offset so groups
             # are 180° out of phase with each other.
             phase_offset = config.LEG_PHASE_OFFSETS.get(leg_name, 0.0)
             leg_time = sim_time + phase_offset * self.cycle_duration
 
             phase_info = self.get_phase_info(leg_time)
             gait_knee, gait_ankle = self.interpolate_keyframes(
-                phase_info['phase_index'], phase_info['time_in_phase']
+                phase_info['phase_index'], phase_info['time_in_phase'], keyframes=kf
             )
 
-            # During warmup, interpolate from neutral toward the gait target
+            # Warmup: blend from this leg's neutral pose toward the gait target
             knee  = neutral_knee  + (gait_knee  - neutral_knee)  * warmup_blend
             ankle = neutral_ankle + (gait_ankle - neutral_ankle) * warmup_blend
 
             # mirror=True: right-side leg — negate angles to match mirrored joint
-            # geometry.  This is purely a hardware correction; it has nothing to
-            # do with gait group or timing (that is handled by phase offset only).
+            # geometry.  Hardware correction only; phase offset handles timing.
             if leg_info.get('mirror', False):
                 knee  = -knee
                 ankle = -ankle
