@@ -117,23 +117,31 @@ with mujoco.viewer.launch_passive(model, data, key_callback=key_callback) as vie
             mujoco.mj_step(model, data)
 
             # 5. Phase tracking — print on phase change or every PHASE_PRINT_INTERVAL
-            off_1 = config.LEG_PHASE_OFFSETS['tip_lf']
-            off_2 = config.LEG_PHASE_OFFSETS['tip_rf']
-            pi_1  = gait_controller.get_phase_info(sim_time + off_1 * gait_controller.cycle_duration)
-            pi_2  = gait_controller.get_phase_info(sim_time + off_2 * gait_controller.cycle_duration)
+            # Right side (rf/rb at 0.0, rm at 0.5)
+            # Left side  (lf/lb at 0.0, lm at 0.5)
+            off_r  = config.LEG_PHASE_OFFSETS['tip_rf']
+            off_rm = config.LEG_PHASE_OFFSETS['tip_rm']
+            off_l  = config.LEG_PHASE_OFFSETS['tip_lf']
+            off_lm = config.LEG_PHASE_OFFSETS['tip_lm']
+            pi_r   = gait_controller.get_phase_info(sim_time + off_r  * gait_controller.cycle_duration)
+            pi_rm  = gait_controller.get_phase_info(sim_time + off_rm * gait_controller.cycle_duration)
+            pi_l   = gait_controller.get_phase_info(sim_time + off_l  * gait_controller.cycle_duration)
+            pi_lm  = gait_controller.get_phase_info(sim_time + off_lm * gait_controller.cycle_duration)
 
-            phase_changed = (pi_1['phase_index'] != _prev_phase_A or
-                             pi_2['phase_index'] != _prev_phase_B)
+            phase_changed = (pi_r['phase_index'] != _prev_phase_A or
+                             pi_l['phase_index'] != _prev_phase_B)
             time_due      = (sim_time - _last_print_t) >= PHASE_PRINT_INTERVAL
 
             if phase_changed or time_due:
-                _prev_phase_A = pi_1['phase_index']
-                _prev_phase_B = pi_2['phase_index']
+                _prev_phase_A = pi_r['phase_index']
+                _prev_phase_B = pi_l['phase_index']
                 _last_print_t = sim_time
                 print(
                     f"t={sim_time:6.2f}s │ "
-                    f"G1 [lf,lb,rm↕]: {pi_1['phase_name']:<8} {pi_1['time_in_phase']*100:3.0f}% │ "
-                    f"G2 [rf,rb,lm↕]: {pi_2['phase_name']:<8} {pi_2['time_in_phase']*100:3.0f}%"
+                    f"R [rf,rb]: {pi_r['phase_name']:<8} {pi_r['time_in_phase']*100:3.0f}%  "
+                    f"rm: {pi_rm['phase_name']:<8} {pi_rm['time_in_phase']*100:3.0f}% │ "
+                    f"L [lf,lb]: {pi_l['phase_name']:<8} {pi_l['time_in_phase']*100:3.0f}%  "
+                    f"lm: {pi_lm['phase_name']:<8} {pi_lm['time_in_phase']*100:3.0f}%"
                 )
 
         # 5. Render every iteration (including while paused)

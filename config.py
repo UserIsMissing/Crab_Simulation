@@ -32,36 +32,31 @@ SAND_CONFIG = {
 # Currently controlled: only 'rm' (Right Middle)
 
 LEG_TIPS = {
-    # mirror=True     → right-side leg: all angles negated (geometry correction).
-    # keyframe_set    → which sequence this leg uses.
-    #   'standard'    → front and back legs
-    #   'middle'      → middle legs (tune separately to fix geometry differences)
-    'tip_lf': {'body': 'dactyl_lf', 'name': 'Left Front',   'active': True, 'mirror': False, 'keyframe_set': 'standard'},
-    'tip_lb': {'body': 'dactyl_lb', 'name': 'Left Back',    'active': True, 'mirror': False, 'keyframe_set': 'standard'},
-    'tip_lm': {'body': 'dactyl_lm', 'name': 'Left Middle',  'active': True, 'mirror': False, 'keyframe_set': 'middle'},
-    'tip_rf': {'body': 'dactyl_rf', 'name': 'Right Front',  'active': True, 'mirror': True,  'keyframe_set': 'standard'},
-    'tip_rb': {'body': 'dactyl_rb', 'name': 'Right Back',   'active': True, 'mirror': True,  'keyframe_set': 'standard'},
-    'tip_rm': {'body': 'dactyl_rm', 'name': 'Right Middle', 'active': True, 'mirror': True,  'keyframe_set': 'middle'},
+    # keyframe_set → which angle sequence this leg follows.
+    # 'right' / 'left' keyframes are written with explicit angles per side —
+    # no automatic mirroring.  Middle legs use the same set as their side's
+    # front/back but are offset 0.5 in LEG_PHASE_OFFSETS.
+    'tip_rf': {'body': 'dactyl_rf', 'name': 'Right Front',  'active': True, 'keyframe_set': 'right'},
+    'tip_rb': {'body': 'dactyl_rb', 'name': 'Right Back',   'active': True, 'keyframe_set': 'right'},
+    'tip_rm': {'body': 'dactyl_rm', 'name': 'Right Middle', 'active': True, 'keyframe_set': 'right'},
+    'tip_lf': {'body': 'dactyl_lf', 'name': 'Left Front',   'active': True, 'keyframe_set': 'left'},
+    'tip_lb': {'body': 'dactyl_lb', 'name': 'Left Back',    'active': True, 'keyframe_set': 'left'},
+    'tip_lm': {'body': 'dactyl_lm', 'name': 'Left Middle',  'active': True, 'keyframe_set': 'left'},
 }
 
 # ============================================================================
 # GAIT PHASE OFFSETS
 # ============================================================================
-# Group A (0.0): lf, lb, rm — lift and step together
-# Group B (0.5): rf, rb, lm — hold the robot stable while A moves, then step
-#
-# The 0.5 offset is the ONLY thing making the groups oppose each other.
-# Group B runs the same keyframe sequence, starting half a cycle later —
-# when A is lifting, B is mid-push; when A plants, B starts lifting.
-# No extra negation is applied for being in Group B.
-
+# Front/back legs on each side move in sync (offset 0.0).
+# Middle legs use the same keyframe set as their side but start half a cycle
+# later (offset 0.5) — automatically matching the opposing side's timing.
 LEG_PHASE_OFFSETS = {
-    'tip_lf': 0.0,   # Group A
-    'tip_lb': 0.0,   # Group A
-    'tip_rm': 0.0,   # Group A  (mirror=True handles geometry, not group)
-    'tip_rf': 0.5,   # Group B  (mirror=True handles geometry, not group)
-    'tip_rb': 0.5,   # Group B  (mirror=True handles geometry, not group)
-    'tip_lm': 0.5,   # Group B
+    'tip_rf': 0.0,   # Right front  — right cycle start
+    'tip_rb': 0.0,   # Right back   — right cycle start
+    'tip_rm': 0.5,   # Right middle — 0.5 into right cycle (auto-syncs with left side)
+    'tip_lf': 0.0,   # Left front   — left cycle start
+    'tip_lb': 0.0,   # Left back    — left cycle start
+    'tip_lm': 0.5,   # Left middle  — 0.5 into left cycle (auto-syncs with right side)
 }
 
 # ============================================================================
@@ -72,8 +67,9 @@ GAIT_CONFIG = {
     # Total cycle duration (seconds) - time for one complete gait cycle
     'cycle_duration': 4.0,
 
-    # Number of phases per cycle — must equal len(keyframe_sets[*]) - 1
-    'num_phases': 5,
+    # MUST be even — so the 0.5 phase offset between groups lands exactly on kf[N/2],
+    # which is neutral (0,0).  Both groups are neutral simultaneously at the handoff.
+    'num_phases': 6,
 
     # Hip control (mostly for balance, currently set to neutral)
     'hip_target': 0.0,  # Radians or normalized units
@@ -88,48 +84,31 @@ GAIT_CONFIG = {
     # Right-side legs get all values negated automatically via mirror=True.
     'keyframe_sets': {
 
-        # ── Front and back legs (lf, lb, rf, rb) ──────────────────────────
-        'standard': [
-            (-0.8, -0.8),   # [0]  standing / recovery
-            ( 0.4, -0.8),   # [2]
-            ( 0.8, 0.6),   # [3]
-            (-0.2,  0.8),   # [4]
-            (-0.4,  0.2),   # [5]
-            (-0.8, -0.8),   # [10] back to standing
-
-            # (-0.8, -0.8),   # [0]  standing / recovery
-            # ( 0.2, -0.8),   # [1]
-            # ( 0.4, -0.8),   # [2]
-            # ( 0.6, -0.6),   # [3]
-            # ( 0.8,  0.2),   # [4]
-            # ( 0.8,  0.5),   # [5]
-            # ( 0.2,  0.8),   # [6]
-            # (-0.2,  1.0),   # [7]
-            # (-0.6,  0.8),   # [8]
-            # (-0.8, -0.2),   # [9]
-            # (-0.8, -0.8),   # [10] back to standing
+        # ── Right side (rf, rb, rm) ───────────────────────────────────────
+        # Write the actual joint angles you want for right-side legs.
+        # kf[0] = kf[3] = kf[6] = (0,0) keeps the 50%-mark at neutral so
+        # rm (0.5 offset) is always neutral when rf/rb are neutral.
+        'right': [
+            ( 0.0,  0.0),   # [0] neutral
+            ( 0.8,  0.2),   # [1] knee down
+            ( 0.6,  0.4),   # [2] full tuck
+            (-0.6,  0.8),   # [3] knee back up
+            (-0.4, -0.6),   # [4] full extension
+            ( 0.2, -0.4),   # [5] knee back down
+            ( 0.0,  0.0),   # [8] neutral — loops to [0]
         ],
 
-        # ── Middle legs (lm, rm) — tune these to match middle-leg geometry ─
-        'middle': [
-            (-0.8, -0.8),   # [0]  standing / recovery
-            ( 0.4, -0.8),   # [2]
-            ( 0.8, 0.6),   # [3]
-            (-0.2,  0.8),   # [4]
-            (-0.4,  0.2),   # [5]
-            (-0.8, -0.8),   # [10] back to standing
-
-            # (-0.8, -0.8),   # [0]  standing / recovery
-            # ( 0.2, -0.8),   # [1]
-            # ( 0.4, -0.8),   # [2]
-            # ( 0.6, -0.6),   # [3]
-            # ( 0.8,  0.2),   # [4]
-            # ( 0.8,  0.5),   # [5]
-            # ( 0.2,  0.8),   # [6]
-            # (-0.2,  1.0),   # [7]
-            # (-0.6,  0.8),   # [8]
-            # (-0.8, -0.2),   # [9]
-            # (-0.8, -0.8),   # [10] back to standing
+        # ── Left side (lf, lb, lm) ───────────────────────────────────────
+        # Write the actual joint angles you want for left-side legs.
+        # lm (0.5 offset) will automatically be at kf[3] when lf/lb are at kf[0].
+        'left': [
+            ( 0.0,  0.0),   # [0] neutral
+            (-0.4, -0.4),   # [1] knee down
+            (-0.8,  0.4),   # [2] full tuck
+            ( 0.8,  0.8),   # [3] knee back up
+            (-0.8,  0.4),   # [4] full extension
+            ( 0.2,  0.2),   # [5] knee back down
+            ( 0.0,  0.0),   # [8] neutral — loops to [0]
         ],
     },
 }

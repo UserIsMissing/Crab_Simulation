@@ -81,9 +81,7 @@ class GaitController:
         # Overall cycle progress
         cycle_progress = wrapped_time / self.cycle_duration
         
-        # Phase names for debugging
-        phase_names = ['Lift', 'stretch', 'Reach', 'Stab', 'Recover']
-        phase_name = phase_names[phase_index] if phase_index < len(phase_names) else 'Unknown'
+        phase_name = str(phase_index)
         
         return {
             'phase_index': phase_index,
@@ -143,7 +141,6 @@ class GaitController:
             # defaults to 'standard' if not set.
             set_name = leg_info.get('keyframe_set', 'standard')
             kf = self.keyframe_sets.get(set_name, self.keyframes)
-            neutral_knee, neutral_ankle = kf[0]
 
             # Shift this leg's clock by its phase offset so groups
             # are 180° out of phase with each other.
@@ -155,15 +152,12 @@ class GaitController:
                 phase_info['phase_index'], phase_info['time_in_phase'], keyframes=kf
             )
 
-            # Warmup: blend from this leg's neutral pose toward the gait target
-            knee  = neutral_knee  + (gait_knee  - neutral_knee)  * warmup_blend
-            ankle = neutral_ankle + (gait_ankle - neutral_ankle) * warmup_blend
-
-            # mirror=True: right-side leg — negate angles to match mirrored joint
-            # geometry.  Hardware correction only; phase offset handles timing.
-            if leg_info.get('mirror', False):
-                knee  = -knee
-                ankle = -ankle
+            # Warmup: blend from joint=0 (MuJoCo's initial state) to gait target.
+            # At t=0 all legs sit still; motion builds in smoothly as warmup rises.
+            # Joint angles are written explicitly per side in the keyframe sets —
+            # no automatic mirroring; left/right differences are in the keyframes.
+            knee  = gait_knee  * warmup_blend
+            ankle = gait_ankle * warmup_blend
 
             targets[f'hip_{leg_id}']   = self.hip_target
             targets[f'knee_{leg_id}']  = knee
