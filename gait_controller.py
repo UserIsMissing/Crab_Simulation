@@ -91,7 +91,7 @@ class GaitController:
         reach, lift = self._foot_trajectory(progress)
 
         knee  = ( self.knee_home  + self.knee_stride  * reach  -  self.knee_clear * lift) * side_sign
-        ankle = ( self.ankle_home - self.ankle_stride * reach  +  self.ankle_tuck * lift) * side_sign
+        ankle = ( self.ankle_home + self.ankle_stride * reach  +  self.ankle_tuck * lift) * side_sign
         return knee, ankle
 
     # ------------------------------------------------------------------ #
