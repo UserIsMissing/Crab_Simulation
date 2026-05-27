@@ -1,26 +1,22 @@
 """
-Main Simulation Loop - Crab Locomotion in Sand
-Orchestrates gait control and sand physics
+Main Simulation Loop - Crab Locomotion in Sand with Data Logging
+Tracks: Horizontal Drag, Slippage Velocity, and Mechanical Energy Exerted
 """
-
 import mujoco
 import mujoco.viewer
 import time
+import numpy as np
 
 # Import modular components
 from gait_controller import GaitController
 from sand_physics import SandPhysics
 import config
 
-# ============================================================================
-# INITIALIZATION
-# ============================================================================
-
-# Load the MuJoCo model and initialize data
+# Initialize MuJoCo model and data
 model = mujoco.MjModel.from_xml_path('crab.xml')
 data = mujoco.MjData(model)
 
-# Set visual ground position to match penetration threshold from config
+# Match visual ground position to configuration threshold
 ground_visual_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, 'ground_visual')
 if ground_visual_id >= 0:
     model.geom_pos[ground_visual_id, 2] = config.SAND_CONFIG['PENETRATION_THRESHOLD']
@@ -29,19 +25,6 @@ if ground_visual_id >= 0:
 gait_controller = GaitController()
 sand_physics = SandPhysics(model, data)
 
-# Print configurations
-if config.SIMULATION_CONFIG['verbose']:
-    print("\n" + "="*50)
-    print("CRAB LOCOMOTION SIMULATOR - Initialization")
-    print("="*50)
-    sand_physics.print_status()
-    gait_controller.print_status(0.0)
-
-# ============================================================================
-# SIMULATION LOOP
-# ============================================================================
-
-# Actuator order mirrors crab.xml — built once, used every step
 CONTROL_MAPPING = {
     'hip_rm': 0,  'knee_rm': 1,  'ankle_rm': 2,
     'hip_rb': 3,  'knee_rb': 4,  'ankle_rb': 5,
@@ -51,109 +34,97 @@ CONTROL_MAPPING = {
     'hip_lf': 15, 'knee_lf': 16, 'ankle_lf': 17,
 }
 
-# Speed control — - slows down, = speeds up
-SPEED_STEPS = [0.1, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0]
-speed_idx = SPEED_STEPS.index(1.0)
-speed_multiplier = 1.0
-paused = True  # Start paused to allow initial observation of the setup
+# Data collection container tailored for terramechanics and energy analytics
+data_history = {
+    'time': [],
+    'pos_x': [],
+    'slippage_velocity': [],
+    'total_drag_force_x': [],
+    'total_vertical_force_z': [],
+    'cumulative_energy_joules': []
+}
 
-# Phase tracking — print on phase change and every PHASE_PRINT_INTERVAL sim-seconds
-PHASE_PRINT_INTERVAL = 0.5   # lower = more frequent updates, higher = less spam
-_prev_phase_A = -1
-_prev_phase_B = -1
-_last_print_t  = -PHASE_PRINT_INTERVAL  # force a print on the very first step
+# Variable tracking for energy integration
+cumulative_energy = 0.0
+last_time = 0.0
 
+print("\n" + "="*50)
+print("RUNNING CRAB SAND INTERACTION & ENERGY DATA LOGGER")
+print("="*50)
 
-def key_callback(keycode):
-    """MuJoCo viewer key handler (GLFW key codes).
-
-    MuJoCo's built-in +/- speed control has no effect in launch_passive mode
-    because our Python loop owns the timing.  We intercept the same keycodes
-    here so the +/- buttons shown in the viewer UI actually work.
-    """
-    global paused, speed_multiplier, speed_idx
-
-    if keycode == 32:                       # SPACE — pause / resume
-        paused = not paused
-        state = "PAUSED" if paused else "RUNNING"
-        print(f"[{state}]  t = {data.time:.2f}s")
-
-    elif keycode in (61, 334):              # = / numpad+  →  faster
-        speed_idx = min(speed_idx + 1, len(SPEED_STEPS) - 1)
-        speed_multiplier = SPEED_STEPS[speed_idx]
-        print(f"Speed: {speed_multiplier}x real-time")
-
-    elif keycode in (45, 333):              # - / numpad-  →  slower
-        speed_idx = max(speed_idx - 1, 0)
-        speed_multiplier = SPEED_STEPS[speed_idx]
-        print(f"Speed: {speed_multiplier}x real-time")
-
-
-with mujoco.viewer.launch_passive(model, data, key_callback=key_callback) as viewer:
-    print("▶  Brachyuran-inspired walking cycle starting...")
-    print("   SPACE       pause / resume")
-    print("   -  /  =     slow down / speed up  (0.1x – 8x real-time)")
-    print("   Close window to exit\n")
-
+with mujoco.viewer.launch_passive(model, data) as viewer:
     while viewer.is_running():
         step_start = time.time()
+        sim_time = data.time
+        dt = sim_time - last_time if sim_time > 0 else model.opt.timestep
+        
+        # 1. Compute asymmetric gait controls from active controller
+        targets = gait_controller.compute_joint_targets(sim_time)
+        
+        # 2. Assign target values directly to MuJoCo actuators
+        for name, val in targets.items():
+            if name in CONTROL_MAPPING:
+                data.ctrl[CONTROL_MAPPING[name]] = val
 
-        if not paused:
-            sim_time = data.time
+        # 3. Process RFT sand interaction updates
+        sand_physics.update()
+        
+        # Extract applied reaction forces from the sand physics directly
+        force_z_accum = 0.0
+        force_x_accum = 0.0
+        for tip in config.get_active_legs():
+            body_name = config.get_leg_body(tip)
+            if body_name:
+                body_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, body_name)
+                if body_id >= 0:
+                    # xfrc_applied contains forces acting directly on the dactyl segments
+                    force_x_accum += abs(data.xfrc_applied[body_id, 0])
+                    force_z_accum += abs(data.xfrc_applied[body_id, 2])
+                    
+        # 4. Calculate Slippage Velocity (Lateral body velocity ignoring intentional forward target)
+        # qvel[0] is translation velocity along the X axis
+        chassis_vel_x = data.qvel[0]
+        
+        # 5. Calculate Energy Exerted (Power = Torque * Joint Velocity)
+        # We integrate power over time across all 18 joints to compute total Joules
+        instantaneous_power = 0.0
+        for i in range(model.nu):
+            torque = data.actuator_force[i]
+            joint_vel = data.qvel[model.jnt_dofadr[model.actuator_trnid[i, 0]]]
+            instantaneous_power += abs(torque * joint_vel)
+            
+        cumulative_energy += instantaneous_power * dt
 
-            # 1. Compute target joint angles for all active legs
-            joint_targets = gait_controller.compute_joint_targets(sim_time)
+        # 6. Append measurements to log history
+        data_history['time'].append(sim_time)
+        data_history['pos_x'].append(data.qpos[0]) 
+        data_history['slippage_velocity'].append(abs(chassis_vel_x))
+        data_history['total_drag_force_x'].append(force_x_accum)
+        data_history['total_vertical_force_z'].append(force_z_accum)
+        data_history['cumulative_energy_joules'].append(cumulative_energy)
 
-            # 2. Push targets to actuators
-            for joint_name, target_value in joint_targets.items():
-                ctrl_idx = CONTROL_MAPPING.get(joint_name)
-                if ctrl_idx is not None:
-                    data.ctrl[ctrl_idx] = target_value
-
-            # 3. Apply RFT sand forces
-            sand_physics.update()
-
-            # 4. Advance physics
-            mujoco.mj_step(model, data)
-
-            # 5. Phase tracking — print on phase change or every PHASE_PRINT_INTERVAL
-            # Right side (rf/rb at 0.0, rm at 0.5)
-            # Left side  (lf/lb at 0.0, lm at 0.5)
-            off_r  = config.LEG_PHASE_OFFSETS['tip_rf']
-            off_rm = config.LEG_PHASE_OFFSETS['tip_rm']
-            off_l  = config.LEG_PHASE_OFFSETS['tip_lf']
-            off_lm = config.LEG_PHASE_OFFSETS['tip_lm']
-            pi_r   = gait_controller.get_phase_info(sim_time + off_r  * gait_controller.cycle_duration)
-            pi_rm  = gait_controller.get_phase_info(sim_time + off_rm * gait_controller.cycle_duration)
-            pi_l   = gait_controller.get_phase_info(sim_time + off_l  * gait_controller.cycle_duration)
-            pi_lm  = gait_controller.get_phase_info(sim_time + off_lm * gait_controller.cycle_duration)
-
-            phase_changed = (pi_r['phase_index'] != _prev_phase_A or
-                             pi_l['phase_index'] != _prev_phase_B)
-            time_due      = (sim_time - _last_print_t) >= PHASE_PRINT_INTERVAL
-
-            if phase_changed or time_due:
-                _prev_phase_A = pi_r['phase_index']
-                _prev_phase_B = pi_l['phase_index']
-                _last_print_t = sim_time
-                print(
-                    f"t={sim_time:6.2f}s │ "
-                    f"R [rf,rb]: {pi_r['phase_name']:<8} {pi_r['time_in_phase']*100:3.0f}%  "
-                    f"rm: {pi_rm['phase_name']:<8} {pi_rm['time_in_phase']*100:3.0f}% │ "
-                    f"L [lf,lb]: {pi_l['phase_name']:<8} {pi_l['time_in_phase']*100:3.0f}%  "
-                    f"lm: {pi_lm['phase_name']:<8} {pi_lm['time_in_phase']*100:3.0f}%"
-                )
-
-        # 5. Render every iteration (including while paused)
+        # 7. Physics step
+        mujoco.mj_step(model, data)
         viewer.sync()
 
-        # 6. Real-time pacing — divide timestep by speed multiplier so that
-        #    >1x sleeps less (faster) and <1x sleeps more (slow-motion).
-        if not paused:
-            target_step = model.opt.timestep / speed_multiplier
-            elapsed = time.time() - step_start
-            remaining = target_step - elapsed
-            if remaining > 0:
-                time.sleep(remaining)
-        else:
-            time.sleep(0.016)   # ~60 FPS while paused
+        # Update timing reference
+        last_time = sim_time
+
+        # Real-time synchronization pacing
+        elapsed = time.time() - step_start
+        if elapsed < model.opt.timestep:
+            time.sleep(model.opt.timestep - elapsed)
+            
+        # Break simulation window automatically after 12 seconds of clear data cycles
+        if sim_time >= 60.0:
+            print("Target simulation data window captured successfully.")
+            break
+
+
+# Export dataset safely to working folder using config fallback filename
+log_target_file = config.SIMULATION_CONFIG.get('log_file', 'simulation_log.npy')
+if log_target_file.endswith('.csv'):
+    log_target_file = log_target_file.replace('.csv', '.npy')
+
+np.save(log_target_file, data_history)
+print(f"Simulation logged data saved to '{log_target_file}'")

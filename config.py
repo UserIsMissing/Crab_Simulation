@@ -67,7 +67,7 @@ LEG_PHASE_OFFSETS = {
 # Tune KNEE_STRIDE / ANKLE_STRIDE for stride length, KNEE_CLEAR for lift height.
 
 GAIT_CONFIG = {
-    'cycle_duration':  1.0,   # seconds per full gait cycle
+    'cycle_duration':  4.0,   # seconds per full gait cycle
     'duty':            0.5,   # stance fraction (0.5 = symmetric tripod)
     'hip_target':      0.0,   # hip held neutral — stride comes from knee+ankle
     'warmup_duration': 2.0,   # seconds to blend in from neutral standing pose
