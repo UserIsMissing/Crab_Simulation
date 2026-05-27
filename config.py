@@ -67,7 +67,7 @@ LEG_PHASE_OFFSETS = {
 # Tune KNEE_STRIDE / ANKLE_STRIDE for stride length, KNEE_CLEAR for lift height.
 
 GAIT_CONFIG = {
-    'cycle_duration':  4.0,   # seconds per full gait cycle
+    'cycle_duration':  1.0,   # seconds per full gait cycle
     'duty':            0.5,   # stance fraction (0.5 = symmetric tripod)
     'hip_target':      0.0,   # hip held neutral — stride comes from knee+ankle
     'warmup_duration': 2.0,   # seconds to blend in from neutral standing pose
@@ -77,13 +77,13 @@ GAIT_CONFIG = {
     # opposite-phase legs collapse to the same joint angle and the tripod
     # symmetry breaks (all corners look identical, both middles look identical).
     'knee_home':    0.5,      # how far the leg is tucked under / splayed out at rest
-    'ankle_home':   0.3,      # ankle curl at rest
+    'ankle_home':   -0.1,      # ankle curl at rest
 
     # Cycling amplitudes — added on top of home pose
     'knee_stride':  0.6,      # knee swing during stance (push/pull strength)
     'knee_clear':   1.0,      # knee opening during swing (ground clearance)
-    'ankle_stride': 0.4,      # ankle contribution to stride
-    'ankle_tuck':   0.5,      # ankle curl during swing
+    'ankle_stride': -0.2,      # ankle contribution to stride
+    'ankle_tuck':   0.6,      # ankle curl during swing
 }
 
 # ============================================================================
