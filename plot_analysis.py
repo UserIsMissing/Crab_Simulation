@@ -3,8 +3,7 @@ plot_analysis.py — Processes sand terramechanics and energy variables.
 Saves figure as sand_interaction_analysis.png
 
 run ./mujoco_env/bin/mjpython simulate_crab.py
-
-then run python(3) plot_analysis.py
+then run python3 plot_analysis.py
 """
 import numpy as np
 import matplotlib.pyplot as plt
@@ -31,10 +30,18 @@ fig.suptitle('Analysis of Dynamic Drag and Media Slippage',
              fontsize=14, fontweight='bold', y=0.97)
 
 # ------------------------------------------------------------------
-# PANEL 1: Sand Interaction Forces (Drag vs Support)
+# PANEL 1: Sand Interaction Forces (Legs vs Sifter Tool Drag)
 # ------------------------------------------------------------------
-axs[0].plot(time_vec, data_history['total_drag_force_x'], label='Total Horizontal Sand Drag Force ($F_x$)', color='#e74c3c', linewidth=2)
-axs[0].plot(time_vec, data_history['total_vertical_force_z'], label='Total Vertical Ground Reaction ($F_z$)', color='#2980b9', linewidth=1.5, alpha=0.7)
+# Leg Drag & Ground Reaction Forces
+axs[0].plot(time_vec, data_history['total_drag_force_x'], label='Leg Horizontal Sand Drag ($F_x$)', color='#e74c3c', linewidth=2)
+axs[0].plot(time_vec, data_history['total_vertical_force_z'], label='Leg Vertical Ground Reaction ($F_z$)', color='#2980b9', linewidth=1.5, alpha=0.5)
+
+# ADDED: Sifter/Rake Parasitic Drag Forces
+if 'sifter_drag_force_x' in data_history:
+    axs[0].plot(time_vec, data_history['sifter_drag_force_x'], label='Rake Parasitic Drag ($F_{x, rake}$)', color='#8e44ad', linewidth=2, linestyle='-.')
+if 'sifter_vertical_force_z' in data_history:
+    axs[0].plot(time_vec, data_history['sifter_vertical_force_z'], label='Rake Vertical Reaction ($F_{z, rake}$)', color='#16a085', linewidth=1.5, alpha=0.5)
+
 axs[0].set_ylabel('Force [Newtons]', fontsize=10, fontweight='bold')
 axs[0].set_title('A. Granular Resistive Force Theory (RFT) Loading Profiles', fontsize=11, loc='left', color='#2c3e50', fontweight='bold')
 axs[0].legend(loc='upper right', frameon=True, facecolor='white', framealpha=0.9)
@@ -42,7 +49,6 @@ axs[0].legend(loc='upper right', frameon=True, facecolor='white', framealpha=0.9
 # ------------------------------------------------------------------
 # PANEL 2: Media Slippage vs Forward Translation
 # ------------------------------------------------------------------
-# Calculate an index of slip progress (Slippage vs actual X progress)
 axs[1].plot(time_vec, data_history['slippage_velocity'], label='Chassis Slippage Velocity ($v_x$)', color='#e67e22', linewidth=2)
 axs[1].plot(time_vec, data_history['pos_x'], label='Net Displacement Position (X)', color='#2ecc71', linewidth=2, linestyle='--')
 axs[1].set_ylabel('Velocity [m/s] / Position [m]', fontsize=10, fontweight='bold')

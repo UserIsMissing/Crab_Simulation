@@ -29,8 +29,8 @@ class SandPhysics:
         if sand_params is None:
             sand_params = config.SAND_CONFIG
         
-        self.K_VERTICAL = sand_params.get('K_VERTICAL', 250.0)
-        self.K_HORIZONTAL = sand_params.get('K_HORIZONTAL', 15.0)
+        self.K_VERTICAL = sand_params.get('K_VERTICAL', 180.0)
+        self.K_HORIZONTAL = sand_params.get('K_HORIZONTAL', 25.0)
         self.PENETRATION_THRESHOLD = sand_params.get('PENETRATION_THRESHOLD', 0.0)
         
         # Cache for tip/body IDs (computed once, reused)

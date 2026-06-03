@@ -52,10 +52,10 @@ class GaitController:
 
         return {
             'phase_index':    phase_index,
-            'phase_name':     phase_name,
+            'phase_name':      phase_name,
             'time_in_phase':  time_in_phase,
             'cycle_progress': progress,
-            'current_time':   wrapped,
+            'current_time':    wrapped,
         }
 
     # ------------------------------------------------------------------ #
@@ -82,16 +82,11 @@ class GaitController:
 
         side_sign = +1 (right): joints positive → leg tucks UNDER chassis (push)
         side_sign = -1 (left):  joints negative → leg reaches OUTSIDE chassis (pull)
-
-        The side-signed *_home terms keep the leg on its own side of the body at
-        rest.  Without them, a leg that's 180° out of phase on the opposite side
-        ends up at the same joint angle (the two negations cancel) — that's the
-        bug that made all four corners look identical.
         """
         reach, lift = self._foot_trajectory(progress)
 
-        knee  = ( self.knee_home  + self.knee_stride  * reach  -  self.knee_clear * lift) * side_sign
-        ankle = ( self.ankle_home + self.ankle_stride * reach  +  self.ankle_tuck * lift) * side_sign
+        knee  = (self.knee_home  + self.knee_stride  * reach  -  self.knee_clear * lift) * side_sign
+        ankle = (self.ankle_home + self.ankle_stride * reach  +  self.ankle_tuck * lift) * side_sign
         return knee, ankle
 
     # ------------------------------------------------------------------ #
